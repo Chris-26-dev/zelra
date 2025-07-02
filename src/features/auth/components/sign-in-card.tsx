@@ -8,6 +8,7 @@ import { useState } from "react"
 import { useAuthActions } from "@convex-dev/auth/react";
 import { OctagonAlertIcon } from "lucide-react"
 
+
 interface Props {
     setState: (state: SignInFlow) => void;
 }
@@ -26,7 +27,7 @@ export const SignInCard = ({ setState }: Props) => {
         setPending(true);
         signIn("password", { email, password, flow: "signIn" })
             .catch(() => {
-                setError("Invalid email and password");
+                setError("Invalid email or password");
             })
             .finally(() => {
                 setPending(false);
