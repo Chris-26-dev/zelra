@@ -6,6 +6,7 @@ import { SignInFlow } from "../types"
 import Image from "next/image"
 import { useState } from "react"
 import { useAuthActions } from "@convex-dev/auth/react";
+import { OctagonAlertIcon } from "lucide-react";
 
 interface Props {
     setState: (state: SignInFlow) => void;
@@ -16,7 +17,21 @@ export const SignInCard = ({ setState }: Props) => {
 
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [error, setError] = useState("");
     const [pending, setPending] = useState(false);
+
+    const onPasswordSignIn = (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+
+        setPending(true);
+        signIn("password", { email, password, flow: "signIn" })
+            .catch(() => {
+                setError("Invalid email or password");
+            })
+            .finally(() => {
+                setPending(false);
+            });
+    };
 
     const onProviderSignIn = (value: "github" | "google") => {
         setPending(true)
@@ -30,7 +45,7 @@ export const SignInCard = ({ setState }: Props) => {
         <div className="flex flex-col gap-6">
             <Card className="overflow-hidden p-0 border-0 shadow-none">
                 <CardContent className="grid p-0 md:grid-cols-2">
-                    <form className="p-6 md:p-8">
+                    <form onSubmit={onPasswordSignIn} className="p-6 md:p-8">
                         <div className="flex flex-col gap-6">
                             <div className="flex flex-col items-center text-center">
                                 <h1 className="text-2xl font-bold">
@@ -60,7 +75,12 @@ export const SignInCard = ({ setState }: Props) => {
                                     required
                                 />
                             </div>
-
+                            {!!error && (
+                                <div className="bg-destructive/15 p-3 rounded-md flex items-center gap-x-2 text-sm text-destructive">
+                                    <OctagonAlertIcon className="size-4"/>
+                                    <p>{error}</p>
+                                </div>
+                            )}
                             <Button type="submit" className="w-full" size="lg" disabled={pending}>
                                 Sign In
                             </Button>
@@ -89,7 +109,7 @@ export const SignInCard = ({ setState }: Props) => {
                                     <FaGithub />
                                 </Button>
                             </div>
-                            <p className="text-center text-xs text-muted-foreground">
+                            <p className="text-center text-sm text-muted-foreground">
                                 Don&apos;t have an account? <span onClick={() => setState("signUp")} className="text-sky-700 hover:underline cursor-pointer">Sign up</span>
                             </p>
                         </div>
