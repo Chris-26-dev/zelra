@@ -6,7 +6,8 @@ import { SignInFlow } from "../types"
 import Image from "next/image"
 import { useState } from "react"
 import { useAuthActions } from "@convex-dev/auth/react";
-import { OctagonAlertIcon } from "lucide-react";
+import { OctagonAlertIcon } from "lucide-react"
+
 
 interface Props {
     setState: (state: SignInFlow) => void;
@@ -77,7 +78,7 @@ export const SignInCard = ({ setState }: Props) => {
                             </div>
                             {!!error && (
                                 <div className="bg-destructive/15 p-3 rounded-md flex items-center gap-x-2 text-sm text-destructive">
-                                    <OctagonAlertIcon className="size-4"/>
+                                    <OctagonAlertIcon className="size-4" />
                                     <p>{error}</p>
                                 </div>
                             )}
