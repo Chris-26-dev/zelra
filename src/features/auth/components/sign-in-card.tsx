@@ -16,9 +16,14 @@ export const SignInCard = ({ setState }: Props) => {
 
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [pending, setPending] = useState(false);
 
-    const handleProviderSignIn = (value: "github" | "google") => {
-        signIn(value);
+    const onProviderSignIn = (value: "github" | "google") => {
+        setPending(true)
+        signIn(value)
+            .finally(() => {
+                setPending(false);
+            })
     };
 
     return (
@@ -56,7 +61,7 @@ export const SignInCard = ({ setState }: Props) => {
                                 />
                             </div>
 
-                            <Button type="submit" className="w-full" size="lg" disabled={false}>
+                            <Button type="submit" className="w-full" size="lg" disabled={pending}>
                                 Sign In
                             </Button>
                             <div className="after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t">
@@ -66,6 +71,8 @@ export const SignInCard = ({ setState }: Props) => {
                             </div>
                             <div className="grid grid-cols-2 gap-4">
                                 <Button
+                                    disabled={pending}
+                                    onClick={() => onProviderSignIn("google")}
                                     variant="outline"
                                     type="button"
                                     className="w-full"
@@ -73,8 +80,8 @@ export const SignInCard = ({ setState }: Props) => {
                                     <FaGoogle />
                                 </Button>
                                 <Button
-                                    disabled={false}
-                                    onClick={() => handleProviderSignIn("github")}
+                                    disabled={pending}
+                                    onClick={() => onProviderSignIn("github")}
                                     variant="outline"
                                     type="button"
                                     className="w-full"
