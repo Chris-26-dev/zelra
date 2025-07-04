@@ -37,6 +37,12 @@ export const create = mutation({
             role: "admin"
         });
 
+        //Every time workspace is created it should have atleast 1 channel
+        await ctx.db.insert("channels", {
+            name: "general",
+            workspaceId,
+        });
+
         return workspaceId;
     },
 });
