@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 
 import { useCreateWorkspaceModal } from "../store/use-create-workspace-modal";
-import { useCreateWorkspace } from "../api/use-create-workspaces";
+import { useCreateWorkspace } from "../api/use-create-workspace";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
