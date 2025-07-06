@@ -73,7 +73,7 @@ export const WorkspaceSidebar = () => {
             <WorkspaceSection
                 label="Direct Messages"
                 hint="New direct message"
-                onNew={() => { }}
+                onNew={member.role === "admin" ? () => setOpen(true) : undefined}
             >
                 {members?.map((item) => (
                     <UserItem
