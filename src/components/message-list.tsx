@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Id } from "../../convex/_generated/dataModel";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
 import { useCurrentMember } from "@/features/members/api/use-current-member";
+import { Loader2 } from "lucide-react";
 
 const TIME_THRESHOLD = 5;
 
@@ -38,9 +39,9 @@ export const MessageList = ({
     loadMore,
     isLoadingMore,
     canLoadMore,
-}:Props) => {
+}: Props) => {
     const [editingId, setEditingId] = useState<Id<"messages"> | null>(null);
-    
+
     const workspaceId = useWorkspaceId();
     const { data: currentMember } = useCurrentMember({ workspaceId });
 
@@ -63,14 +64,14 @@ export const MessageList = ({
             {Object.entries(groupedMessages || {}).map(([dateKey, messages]) => (
                 <div key={dateKey}>
                     <div className="text-center my-2 relative">
-                        <hr className="absolute top-1/2 left-0 right-0 border-t border-gray-300"/>
+                        <hr className="absolute top-1/2 left-0 right-0 border-t border-gray-300" />
                         <span className="relative inline-block bg-white px-4 py-1 rounded-full text-xs border border-gray-300 shadow-sm">
                             {formatDateLabel(dateKey)}
                         </span>
                     </div>
                     {messages.map((message, index) => {
                         const prevMessage = messages[index - 1];
-                        const isCompact = 
+                        const isCompact =
                             prevMessage &&
                             prevMessage.user?._id === message.user?._id &&
                             differenceInMinutes(
@@ -79,7 +80,7 @@ export const MessageList = ({
                             ) < TIME_THRESHOLD;
 
                         return (
-                            <Message 
+                            <Message
                                 key={message._id}
                                 id={message._id}
                                 memberId={message.memberId}
@@ -103,8 +104,34 @@ export const MessageList = ({
                     })}
                 </div>
             ))}
+            <div
+                className="h-1"
+                ref={(el) => {
+                    if (el) {
+                        const observer = new IntersectionObserver(
+                            ([entry]) => {
+                                if (entry.isIntersecting && canLoadMore) {
+                                    loadMore();
+                                }
+                            },
+                            { threshold: 1.0 }
+                        );
+
+                        observer.observe(el);
+                        return () => observer.disconnect();
+                    }
+                }}
+            />
+            {isLoadingMore && (
+                <div className="text-center my-2 relative">
+                    <hr className="absolute top-1/2 left-0 right-0 border-t border-gray-300" />
+                    <span className="relative inline-block bg-white px-4 py-1 rounded-full text-xs border border-gray-300 shadow-sm">
+                        <Loader2 className="size-4 animate-spin text-muted-foreground" />
+                    </span>
+                </div>
+            )}
             {variant === "channel" && channelName && channelCreationTime && (
-                <ChannelHero 
+                <ChannelHero
                     name={channelName}
                     creationTime={channelCreationTime}
                 />
