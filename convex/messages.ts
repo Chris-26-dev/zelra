@@ -68,6 +68,68 @@ const getMember = async (
         .unique();
 };
 
+export const remove = mutation({
+    args: {
+        id: v.id("messages"),
+    },
+    handler: async (ctx, args) => {
+        const userId = await auth.getUserId(ctx);
+
+        if (!userId) {
+            throw new Error("Unauthorized");
+        }
+
+        const message = await ctx.db.get(args.id);
+
+        if (!message) {
+            throw new Error("Message not found");
+        }
+
+        const member = await getMember(ctx, message.workspaceId, userId);
+
+         if (!member || member._id !== message.memberId) {
+            throw new Error("Unauthorized");
+        }
+
+        await ctx.db.delete(args.id);
+
+        return args.id;
+    },
+});
+
+export const update = mutation({
+    args: {
+        id: v.id("messages"),
+        body: v.string(),
+    },
+    handler: async (ctx, args) => {
+        const userId = await auth.getUserId(ctx);
+
+        if (!userId) {
+            throw new Error("Unauthorized");
+        }
+
+        const message = await ctx.db.get(args.id);
+
+        if (!message) {
+            throw new Error("Message not found");
+        }
+
+        const member = await getMember(ctx, message.workspaceId, userId);
+
+         if (!member || member._id !== message.memberId) {
+            throw new Error("Unauthorized");
+        }
+
+        await ctx.db.patch(args.id, {
+            body: args.body,
+            updatedAt: Date.now(),
+        });
+
+        return args.id;
+    },
+});
+
 export const get = query({
     args: {
         channelId: v.optional(v.id("channels")),
@@ -96,11 +158,11 @@ export const get = query({
 
         const results = await ctx.db
             .query("messages")
-            .withIndex("by_channel_id_parent_message_id_conversation_id", (q) => 
+            .withIndex("by_channel_id_parent_message_id_conversation_id", (q) =>
                 q
-                .eq("channelId", args.channelId)
-                .eq("parentMessageId", args.parentMessageId)
-                .eq("conversationId", _conversationId)
+                    .eq("channelId", args.channelId)
+                    .eq("parentMessageId", args.parentMessageId)
+                    .eq("conversationId", _conversationId)
             )
             .order("desc")
             .paginate(args.paginationOpts);
@@ -141,7 +203,7 @@ export const get = query({
                                         new Set([...existingReaction.memberIds, reaction.memberId])
                                     );
                                 } else {
-                                    acc.push({...reaction, memberIds: [reaction.memberId]});
+                                    acc.push({ ...reaction, memberIds: [reaction.memberId] });
                                 }
 
                                 return acc;
@@ -153,7 +215,7 @@ export const get = query({
                         );
 
                         const reactionsWithoutMemberIdProperty = dedupedReactions.map(
-                            ({ memberId, ...rest}) => rest,
+                            ({ memberId, ...rest }) => rest,
                         );
 
                         return {
