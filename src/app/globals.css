@@ -185,3 +185,8 @@ body,
   text-overflow: ellipsis !important;
   white-space: nowrap !important;
 }
+
+.messages-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: #dcdcdc #f8f8f8;
+}
