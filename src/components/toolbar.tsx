@@ -43,6 +43,7 @@ export const Toolbar = ({
                             variant="ghost"
                             size="iconSm"
                             disabled={isPending}
+                            onClick={handleThread}
                         >
                             <MessageSquareTextIcon className="size-4" />
                         </Button>
@@ -54,21 +55,23 @@ export const Toolbar = ({
                             variant="ghost"
                             size="iconSm"
                             disabled={isPending}
+                            onClick={handleEdit}
                         >
                             <PencilIcon className="size-4" />
                         </Button>
                     </Hint>
                 )}
                 {isAuthor && (
-                <Hint label="Delete message">
-                    <Button
-                        variant="ghost"
-                        size="iconSm"
-                        disabled={isPending}
-                    >
-                        <Trash2Icon className="size-4" />
-                    </Button>
-                </Hint>
+                    <Hint label="Delete message">
+                        <Button
+                            variant="ghost"
+                            size="iconSm"
+                            disabled={isPending}
+                            onClick={handleDelete}
+                        >
+                            <Trash2Icon className="size-4" />
+                        </Button>
+                    </Hint>
                 )}
             </div>
         </div>
