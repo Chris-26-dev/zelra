@@ -58,7 +58,7 @@ export const SignInCard = ({ setState }: Props) => {
                             </div>
                             <div className="grid gap-3">
                                 <Input
-                                    disabled={false}
+                                    disabled={pending}
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     placeholder="Email"
@@ -68,7 +68,7 @@ export const SignInCard = ({ setState }: Props) => {
                             </div>
                             <div className="grid gap-3">
                                 <Input
-                                    disabled={false}
+                                    disabled={pending}
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                     placeholder="Password"
