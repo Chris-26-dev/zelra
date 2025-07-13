@@ -11,6 +11,8 @@ import { Id } from "../../../../convex/_generated/dataModel";
 import { Thread } from "@/features/messages/components/thread";
 import { Profile } from "@/features/members/components/profile";
 import { useEffect, useState } from "react";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { useCurrentUser } from "@/features/auth/api/use-current-user";
 
 interface Props {
     children: React.ReactNode;
@@ -23,6 +25,10 @@ const WorkspaceLayout = ({ children }: Props) => {
 
     // Prevent SSR mismatch by waiting for hydration
     const [isHydrated, setIsHydrated] = useState(false);
+    const { data: user } = useCurrentUser();
+    const isMobile = useIsMobile();
+
+    const autoSaveId = user?._id ? `za-workspace-layout-${user._id}` : undefined;
 
     useEffect(() => {
         setIsHydrated(true);
@@ -39,17 +45,22 @@ const WorkspaceLayout = ({ children }: Props) => {
                 <Sidebar />
                 <ResizablePanelGroup
                     direction="horizontal"
-                    autoSaveId="za-workspace-layout"
+                    autoSaveId={autoSaveId}
                 >
                     <ResizablePanel
                         defaultSize={20}
-                        minSize={11}
+                        minSize={5}
                         //sidebar color
                         className="bg-blue-500"
                     >
                         <WorkspaceSidebar />
                     </ResizablePanel>
-                    <ResizableHandle />
+                    {isMobile ? (
+                        <ResizableHandle withHandle />
+                    ) : (
+                        <ResizableHandle/>
+                    )}
+
                     <ResizablePanel minSize={20} defaultSize={80}>
                         {children}
                     </ResizablePanel>
