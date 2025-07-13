@@ -26,9 +26,10 @@ export const UserButton = () => {
         return null;
     }
 
-    const { image, name } = data;
+    const image = data?.image ?? "";
+    const name = data?.name ?? "M";
 
-    const avatarFallback = name!.charAt(0).toUpperCase() ?? "M";
+    const avatarFallback = name.charAt(0).toUpperCase();
 
     return (
         <DropdownMenu modal={false}>
@@ -44,7 +45,7 @@ export const UserButton = () => {
                 <DropdownMenuItem
                     onClick={async () => {
                         await signOut();          // 1. Sign out user
-                        router.replace("/");      // 2. Redirect to home (or sign-in screen)
+                        router.refresh();      // 2. Redirect to home (or sign-in screen)
                     }}
                     className="h-8 cursor-pointer hover:opacity-75"
                 >
