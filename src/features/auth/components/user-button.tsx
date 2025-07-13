@@ -10,11 +10,9 @@ import {
 import { useCurrentUser } from "../api/use-current-user";
 import { Loader2, LogOutIcon } from "lucide-react";
 import { useAuthActions } from "@convex-dev/auth/react";
-import { useRouter } from "next/navigation";
 
 
 export const UserButton = () => {
-    const router = useRouter();
     const { signOut } = useAuthActions();
     const { data, isLoading } = useCurrentUser();
 
@@ -45,7 +43,7 @@ export const UserButton = () => {
                 <DropdownMenuItem
                     onClick={async () => {
                         await signOut();          // 1. Sign out user
-                        router.refresh();      // 2. Redirect to home (or sign-in screen)
+                        window.location.href = "/";      // 2. Redirect to home (or sign-in screen)
                     }}
                     className="h-8 cursor-pointer hover:opacity-75"
                 >
