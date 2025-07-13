@@ -39,7 +39,7 @@ const Editor = ({
 }: Props) => {
     const [text, setText] = useState("");
     const [image, setImage] = useState<File | null>(null);
-    const [isToolbarVisible, setIsToolbarVisible] = useState(true);
+    const [isToolbarVisible, setIsToolbarVisible] = useState(false);
 
     const submitRef = useRef(onSubmit);
     const placeholderRef = useRef(placeholder);
@@ -105,6 +105,14 @@ const Editor = ({
         quillRef.current = quill;
         quillRef.current.focus();
 
+        // Hide toolbar after init if needed
+        setTimeout(() => {
+            if (!isToolbarVisible) {
+                const toolbar = container.querySelector(".ql-toolbar");
+                if (toolbar) toolbar.classList.add("hidden");
+            }
+        }, 0);
+
         if (innerRef) {
             innerRef.current = quill;
         }
@@ -139,10 +147,10 @@ const Editor = ({
         }
     };
 
-    const onEmojiSelect = (emoji: any) => {
+    const onEmojiSelect = (emojiValue: string) => {
         const quill = quillRef.current;
 
-        quill?.insertText(quill?.getSelection()?.index || 0, emoji.native);
+        quill?.insertText(quill?.getSelection()?.index || 0, emojiValue);
     }
 
     const isEmpty = !image && text.replace(/<(.|\n)*?>/g, "").trim().length === 0;

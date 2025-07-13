@@ -10,6 +10,7 @@ import { Loader2 } from "lucide-react";
 import { Id } from "../../../../convex/_generated/dataModel";
 import { Thread } from "@/features/messages/components/thread";
 import { Profile } from "@/features/members/components/profile";
+import { useEffect, useState } from "react";
 
 interface Props {
     children: React.ReactNode;
@@ -19,6 +20,17 @@ const WorkspaceLayout = ({ children }: Props) => {
     const { parentMessageId, profileMemberId, onClose } = usePanel();
 
     const showPanel = !!parentMessageId || !!profileMemberId;
+
+    // Prevent SSR mismatch by waiting for hydration
+    const [isHydrated, setIsHydrated] = useState(false);
+
+    useEffect(() => {
+        setIsHydrated(true);
+    }, []);
+
+    if (!isHydrated) {
+        return null; // or show loader
+    }
 
     return (
         <div className="h-full ">
@@ -38,7 +50,7 @@ const WorkspaceLayout = ({ children }: Props) => {
                         <WorkspaceSidebar />
                     </ResizablePanel>
                     <ResizableHandle />
-                    <ResizablePanel minSize={20}>
+                    <ResizablePanel minSize={20} defaultSize={80}>
                         {children}
                     </ResizablePanel>
                     {showPanel && (
@@ -60,7 +72,7 @@ const WorkspaceLayout = ({ children }: Props) => {
                                         <Loader2 className="size-5 animate-spin text-muted-foreground" />
                                     </div>
                                 )}
-                                
+
                             </ResizablePanel>
                         </>
                     )}
@@ -71,10 +83,3 @@ const WorkspaceLayout = ({ children }: Props) => {
 };
 
 export default WorkspaceLayout;
-
-// profileMemberId ? (
-//     <Profile
-//         memberId={profileMemberId as Id<"members">}
-//         onClose={onClose}
-//     />
-// ) :
