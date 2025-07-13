@@ -136,7 +136,7 @@ const Editor = ({
                 innerRef.current = null;
             }
         };
-    }, [innerRef]);
+    }, [innerRef, isToolbarVisible]);
 
     const toggleToolbar = () => {
         setIsToolbarVisible((current) => !current);
