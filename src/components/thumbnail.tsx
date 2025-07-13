@@ -7,7 +7,6 @@ import {
     DialogTitle,
     DialogTrigger,
 } from "@/components/ui/dialog";
-import { XIcon } from "lucide-react";
 
 interface Props {
     url: string | null | undefined;

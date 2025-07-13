@@ -17,12 +17,12 @@ export const WorkspaceSidebar = () => {
     const channelId = useChannelId();
     const workspaceId = useWorkspaceId();
     
-    const [_open, setOpen] = useCreateChannelModal();
+    const [, setOpen] = useCreateChannelModal();
 
     const { data: member, isLoading: memberLoading } = useCurrentMember({ workspaceId });
     const { data: workspace, isLoading: workspaceLoading } = useGetWorkspace({ id: workspaceId });
-    const { data: channels, isLoading: channelsLoading } = useGetChannels({ workspaceId });
-    const { data: members, isLoading: membersLoading } = useGetMembers({ workspaceId });
+    const { data: channels } = useGetChannels({ workspaceId });
+    const { data: members } = useGetMembers({ workspaceId });
 
     if (workspaceLoading || memberLoading) {
         return (

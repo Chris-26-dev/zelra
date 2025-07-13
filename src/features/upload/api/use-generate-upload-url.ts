@@ -24,6 +24,7 @@ export const useGenerateUploadUrl = () => {
 
     const mutation = useMutation(api.upload.generateUploadUrl);
 
+    // eslint-disable-next-line @typescript-eslint/no-empty-object-type
     const mutate = useCallback(async (_values: {}, options?: Options) => {
         try {
             setData(null);

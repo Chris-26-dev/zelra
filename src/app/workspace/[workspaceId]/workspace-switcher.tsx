@@ -5,7 +5,6 @@ import {
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
-    DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { useGetWorkspace } from "@/features/workspaces/api/use-get-workspace";
 import { useGetWorkspaces } from "@/features/workspaces/api/use-get-workspaces";
@@ -17,9 +16,9 @@ import { useRouter } from "next/navigation";
 export const WorkspaceSwitcher = () => {
     const router = useRouter();
     const workspaceId = useWorkspaceId();
-    const [_open, setOpen] = useCreateWorkspaceModal();
+    const [, setOpen] = useCreateWorkspaceModal();
 
-    const { data: workspaces, isLoading: workspacesLoading } = useGetWorkspaces();
+    const { data: workspaces } = useGetWorkspaces();
     const { data: workspace, isLoading: workspaceLoading } = useGetWorkspace({ id: workspaceId });
 
     const filteredWorkspaces = workspaces?.filter(
