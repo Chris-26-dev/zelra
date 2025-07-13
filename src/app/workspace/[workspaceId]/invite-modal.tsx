@@ -83,7 +83,7 @@ export const InviteModal = ({ open, setOpen, name, joinCode }: Props) => {
                             <RefreshCcw className="size-4 ml-2" />
                         </Button>
                         <DialogClose asChild>
-                            <Button>Close</Button>
+                            <Button disabled={isPending}>Close</Button>
                         </DialogClose>
                     </div>
                 </DialogContent>
