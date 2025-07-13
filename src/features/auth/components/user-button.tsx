@@ -28,7 +28,7 @@ export const UserButton = () => {
 
     const { image, name } = data;
 
-    const avatarFallback = name!.charAt(0).toUpperCase();
+    const avatarFallback = name!.charAt(0).toUpperCase() ?? "M";
 
     return (
         <DropdownMenu modal={false}>
