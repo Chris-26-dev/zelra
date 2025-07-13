@@ -1,36 +1,65 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Zelra – Slack Clone
 
-## Getting Started
+Zelra is a real-time, multi-workspace chat application inspired by Slack. It uses **Next.js 15**, **Convex** for backend logic and database, **React 19**, **TailwindCSS**, and **Radix UI** to build a seamless messaging experience.
 
-First, run the development server:
+## ✨ Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+- ✅ Authentication using Convex Auth middleware
+- 🏢 Workspace management (create, join, update, delete)
+- 📚 Channels (create, join, threaded conversations)
+- 💬 Real-time messages and threads
+- 🔄 Message reactions (toggle emoji reactions)
+- 📎 Image uploads with Convex storage
+- 🔐 Authentication middleware
+- 📱 Responsive layout with mobile detection for confirmation hooks
+- 🎨 Clean UI powered by Shadcn, Radix, Tailwind, Lucide
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 📦 Tech Stack
 
-## Learn More
+- **Frontend**: React 19, Next.js 15 App Router
+- **Backend**: Convex Functions (`convex/`)
+- **Auth**: Convex + Next.js Middleware
+- **State**: Jotai, Local React state
+- **Styling**: TailwindCSS + clsx + tailwind-merge
+- **UI**: Radix UI, ShadCN-inspired
+- **Editor**: Quill rich text editor
+- **Realtime**: Convex subscriptions
 
-To learn more about Next.js, take a look at the following resources:
+---
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 🧠 Folder Structure
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+src/
+├── app/ # Route handlers (Next.js App Router)
+├── components/ # Shared UI components (Button, Dialog, etc.)
+├── features/ # Domain features (auth, messages, workspaces, etc.)
+│ ├── workspaces/
+│ ├── channels/
+│ ├── messages/
+│ └── reactions/
+├── hooks/ # Custom reusable hooks (usePanel, useQueryParam, etc.)
+├── lib/ # Utilities (cn, classnames, etc.)
+├── convex/ # Convex functions & data model
 
-## Deploy on Vercel
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+What I Learned:
+Throughout the project, I learned a lot about both frontend and backend aspects:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Frontend:
+-How to build a real-time chat app UI with optimistic updates.
+-Structuring modular React hooks like useToggleReaction, useGenerateUploadUrl, etc.
+-Managing complex query param logic without third-party libraries.
+
+Backend:
+-Writing Convex functions and schemas for workspaces, channels, messages, reactions, etc.
+-Using Convex storage for secure file uploads via signed URLs.
+-Understanding how Convex handles reactive data (subscriptions) and background tasks.
+-Handling middleware-based auth redirects based on route matchers.
+
+Other:
+-Importance of writing custom reusable hooks (use-confirm, use-query-param, use-mobile, etc.)
+-How to manage URL state manually with custom hooks.
+-Confidence in building production-level UI with app router + middleware
