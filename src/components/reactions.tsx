@@ -4,8 +4,9 @@ import { useCurrentMember } from "@/features/members/api/use-current-member";
 import { cn } from "@/lib/utils";
 import { Hint } from "./hint";
 import { EmojiPopover } from "./emoji-popover";
-import { MdOutlineAddReaction } from "react-icons/md";
+import { SmilePlusIcon } from "lucide-react";
 import { useGetMembers } from "@/features/members/api/use-get-members";
+import { useState } from "react";
 
 interface Props {
     data: Array<
@@ -24,10 +25,11 @@ export const Reactions = ({
     const workspaceId = useWorkspaceId();
     const { data: currentMember } = useCurrentMember({ workspaceId });
     const { data: allMembers } = useGetMembers({ workspaceId });
+    const [popped, setPopped] = useState<string | null>(null);
 
     const currentMemberId = currentMember?._id;
 
-    if (data.length === 0 || !currentMemberId || !currentMemberId || !allMembers) {
+    if (data.length === 0 || !currentMemberId || !allMembers) {
         return null;
     }
 
@@ -46,38 +48,50 @@ export const Reactions = ({
             ? `${displayed.join(", ")}, +${remaining} more`
             : displayed.join(", ");
     };
+
+    const toggle = (value: string) => {
+        setPopped(value);
+        onChange(value);
+    };
+
     return (
-        <div className="flex items-center gap-1 mt-1 mb-1">
-            {data.map((reaction) => (
-                <Hint
-                    key={reaction._id}
-                    side="bottom"
-                    label={`${getNames(reaction.memberIds)} reacted with ${reaction.value}`}
-                //{`${reaction.count} ${reaction.count === 1 ? "person" : "people"} reacted with ${reaction.value}`}
-                >
-                    <button
-                        onClick={() => onChange(reaction.value)}
-                        className={cn(
-                            "h-6 px-2 rounded-full bg-slate-200/70 border border-transparent text-slate-800 flex items-center gap-x-1",
-                            reaction.memberIds.includes(currentMemberId) && "bg-blue-100/70 border-blue-500 text-white"
-                        )}>
-                        {reaction.value}
-                        <span className={cn(
-                            "text-xs font-semibold text-muted-foreground",
-                            reaction.memberIds.includes(currentMemberId) && "text-blue-500",
-                        )}
+        <div className="mt-1.5 mb-0.5 flex flex-wrap items-center gap-1.5">
+            {data.map((reaction) => {
+                const isMine = reaction.memberIds.includes(currentMemberId);
+                return (
+                    <Hint
+                        key={reaction._id}
+                        side="bottom"
+                        label={`${getNames(reaction.memberIds)} reacted with ${reaction.value}`}
+                    >
+                        <button
+                            onClick={() => toggle(reaction.value)}
+                            onAnimationEnd={() => setPopped(null)}
+                            aria-pressed={isMine}
+                            aria-label={`${reaction.value} ${reaction.count}. ${getNames(reaction.memberIds)} reacted.`}
+                            className={cn(
+                                "flex h-[26px] items-center gap-1.5 rounded-md border px-2 text-xs font-semibold transition-colors",
+                                isMine
+                                    ? "border-cobalt bg-wash text-cobalt-ink"
+                                    : "border-line bg-card text-ink-2 hover:border-line-2",
+                                popped === reaction.value && "motion-safe:animate-pop",
+                            )}
                         >
+                            <span className="text-sm leading-none">{reaction.value}</span>
                             {reaction.count}
-                        </span>
-                    </button>
-                </Hint>
-            ))}
+                        </button>
+                    </Hint>
+                );
+            })}
             <EmojiPopover
                 hint="Add reaction"
-                onEmojiSelect={(emoji) => onChange(emoji)}
+                onEmojiSelect={(emoji) => toggle(emoji)}
             >
-                <button className="h-7 px-3 rounded-full bg-slate-200/70 border border-transparent hover:border-slate-500 text-slate-800 flex items-center gap-x-1">
-                    <MdOutlineAddReaction className="size-4" />
+                <button
+                    aria-label="Add reaction"
+                    className="grid h-[26px] w-[30px] place-items-center rounded-md border border-line bg-card text-ink-3 opacity-0 transition-opacity hover:border-line-2 hover:text-ink group-hover:opacity-100 group-focus-within:opacity-100 focus-visible:opacity-100"
+                >
+                    <SmilePlusIcon className="size-3.5" />
                 </button>
             </EmojiPopover>
         </div>

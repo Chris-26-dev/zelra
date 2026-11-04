@@ -3,11 +3,14 @@
 import { useCreateOrGetConversation } from "@/features/conversations/api/use-create-or-get-conversation";
 import { useMemberId } from "@/hooks/use-member-id";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
-import { AlertTriangle, Loader2 } from "lucide-react";
+import { MessageCircleOffIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Id } from "../../../../../../convex/_generated/dataModel";
 import { toast } from "sonner";
 import { Conversation } from "./conversation";
+import { ConversationHeader } from "@/components/conversation-header";
+import { EmptyState } from "@/components/empty-state";
+import { MessageSkeleton, Skeleton } from "@/components/ui/skeleton";
 
 const MemberIdPage = () => {
     const memberId = useMemberId();
@@ -30,17 +33,28 @@ const MemberIdPage = () => {
 
     if (isPending) {
         return (
-            <div className="h-full flex items-center justify-center">
-                <Loader2 className="size-6 animate-spin text-muted-foreground" />
+            <div className="flex h-full flex-col">
+                <ConversationHeader>
+                    <Skeleton className="h-4 w-40" />
+                </ConversationHeader>
+                <div className="flex flex-1 flex-col justify-end">
+                    <MessageSkeleton />
+                </div>
             </div>
         )
     }
 
     if (!conversationId) {
         return (
-            <div className="h-full flex flex-col gap-y-2 items-center justify-center">
-                <AlertTriangle className="size-6 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">Conversation not found</span>
+            <div className="flex h-full flex-col">
+                <ConversationHeader>
+                    <span className="font-display font-semibold text-ink-3">Direct message</span>
+                </ConversationHeader>
+                <EmptyState
+                    icon={<MessageCircleOffIcon />}
+                    title="Conversation not found"
+                    description="This person may have left the workspace. Pick someone else from Direct messages."
+                />
             </div>
         )
     }

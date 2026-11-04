@@ -1,14 +1,14 @@
 "use client";
 
-import { useCreateWorkspaceModal } from "@/features/workspaces/store/use-create-workspace-modal";
 import { useGetWorkspaces } from "@/features/workspaces/api/use-get-workspaces";
 import { useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
+
+import { ZelraLoader } from "@/components/zelra-loader";
+import { FirstRun } from "@/features/workspaces/components/first-run";
 
 export default function Home() {
   const router = useRouter();
-  const [open, setOpen] = useCreateWorkspaceModal();
 
   const { data, isLoading } = useGetWorkspaces();
 
@@ -19,14 +19,17 @@ export default function Home() {
 
     if (workspaceId) {
       router.replace(`/workspace/${workspaceId}`)
-    } else if (!open) {
-      setOpen(true);
     }
-  }, [workspaceId, isLoading, open, setOpen, router])
+  }, [workspaceId, isLoading, router])
+
+  // No workspaces yet: guide the person through setting one up.
+  if (!isLoading && !workspaceId) {
+    return <FirstRun />;
+  }
 
   return (
-    <div className="flex flex-col bg-blue-500 h-full items-center justify-center">
-      <Loader2 className="size-5 animate-spin text-white" />
+    <div className="grid h-full min-h-dvh place-items-center bg-night text-n-ink-3 hatch">
+      <ZelraLoader label="Opening your workspace" />
     </div>
   );
 }

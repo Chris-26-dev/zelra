@@ -1,14 +1,14 @@
 "use client";
 
 import { useIsMobile } from "@/hooks/use-mobile";
-import { 
+import {
     Dialog,
     DialogContent,
     DialogHeader,
     DialogTitle,
     DialogDescription,
 } from "@/components/ui/dialog";
-import { 
+import {
     Drawer,
     DrawerContent,
     DrawerHeader,
@@ -24,6 +24,7 @@ interface ResponsiveDialogProps {
     onOpenChange: (open: boolean) => void;
 }
 
+// A dialog on larger screens and a bottom sheet on phones.
 export const ResponsiveDialog = ({
     title,
     description,
@@ -37,11 +38,11 @@ export const ResponsiveDialog = ({
         return (
             <Drawer open={open} onOpenChange={onOpenChange}>
                 <DrawerContent>
-                    <DrawerHeader>
+                    <DrawerHeader className="text-left">
                         <DrawerTitle>{title}</DrawerTitle>
                         <DrawerDescription>{description}</DrawerDescription>
                     </DrawerHeader>
-                    <div className="p-4">
+                    <div className="px-4 pb-4">
                         {children}
                     </div>
                 </DrawerContent>
@@ -51,7 +52,7 @@ export const ResponsiveDialog = ({
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent>
+            <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                     <DialogTitle>{title}</DialogTitle>
                     <DialogDescription>{description}</DialogDescription>
@@ -59,6 +60,5 @@ export const ResponsiveDialog = ({
                 {children}
             </DialogContent>
         </Dialog>
-    )
+    );
 };
-

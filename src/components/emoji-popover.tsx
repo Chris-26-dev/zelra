@@ -1,4 +1,6 @@
-import EmojiPicker, { type EmojiClickData } from "emoji-picker-react";
+import dynamic from "next/dynamic";
+import type { EmojiClickData, Theme } from "emoji-picker-react";
+import { useTheme } from "next-themes";
 import {
     Popover,
     PopoverContent,
@@ -7,10 +9,21 @@ import {
 import {
     Tooltip,
     TooltipContent,
-    TooltipProvider,
     TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useState } from "react";
+
+import { ZelraLoader } from "./zelra-loader";
+
+// The picker is large: load it only when someone opens it.
+const EmojiPicker = dynamic(() => import("emoji-picker-react"), {
+    ssr: false,
+    loading: () => (
+        <div className="grid h-[420px] w-[340px] place-items-center text-ink-3">
+            <ZelraLoader label="Loading emoji" />
+        </div>
+    ),
+});
 
 interface Props {
     children: React.ReactNode;
@@ -25,6 +38,7 @@ export const EmojiPopover = ({
 }: Props) => {
     const [popoverOpen, setPopoverOpen] = useState(false);
     const [tooltipOpen, setTooltipOpen] = useState(false);
+    const { resolvedTheme } = useTheme();
 
     const onSelect = (value: EmojiClickData) => {
         onEmojiSelect(value.emoji);
@@ -36,28 +50,29 @@ export const EmojiPopover = ({
     };
 
     return (
-        <TooltipProvider>
-            <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
-                <Tooltip
-                    open={tooltipOpen}
-                    onOpenChange={setTooltipOpen}
-                    delayDuration={50}
-                >
-                    <PopoverTrigger asChild>
-                        <TooltipTrigger asChild>
-                            {children}
-                        </TooltipTrigger>
-                    </PopoverTrigger>
-                    <TooltipContent className="bg-black text-white border border-white/5">
-                        <p className="font-medium text-xs">{hint}</p>
-                    </TooltipContent>
-
-                </Tooltip>
-                <PopoverContent className="p-0 w-full border-none shadow-none">
-                    {/* <Picker data={data} onEmojiSelect={onSelect}/> */}
-                    <EmojiPicker onEmojiClick={onSelect}/>
-                </PopoverContent>
-            </Popover>
-        </TooltipProvider>
+        <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+            <Tooltip
+                open={tooltipOpen}
+                onOpenChange={setTooltipOpen}
+            >
+                <PopoverTrigger asChild>
+                    <TooltipTrigger asChild>
+                        {children}
+                    </TooltipTrigger>
+                </PopoverTrigger>
+                <TooltipContent>
+                    <p>{hint}</p>
+                </TooltipContent>
+            </Tooltip>
+            <PopoverContent className="w-auto overflow-hidden border-line p-0 shadow-pop">
+                {popoverOpen && (
+                    <EmojiPicker
+                        onEmojiClick={onSelect}
+                        theme={(resolvedTheme === "dark" ? "dark" : "light") as Theme}
+                        lazyLoadEmojis
+                    />
+                )}
+            </PopoverContent>
+        </Popover>
     );
 };

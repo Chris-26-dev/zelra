@@ -1,17 +1,17 @@
 import { Button } from "@/components/ui/button";
 import { Id } from "../../../../convex/_generated/dataModel";
-import { AlertTriangle, ChevronDownIcon, Loader2, MailIcon, XIcon } from "lucide-react";
+import { ChevronDownIcon, CopyIcon, LogOutIcon, MailIcon, MessageSquareTextIcon, UserXIcon } from "lucide-react";
 import { useGetMember } from "../api/use-get-member";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Separator } from "@/components/ui/separator";
 import Link from "next/link";
 import { useUpdateMember } from "../api/use-update-member";
 import { useRemoveMember } from "../api/use-remove-member";
 import { useCurrentMember } from "../api/use-current-member";
 import { useWorkspaceId } from "@/hooks/use-workspace-id";
+import { useMemberId } from "@/hooks/use-member-id";
 import { toast } from "sonner";
 import { useConfirm } from "@/hooks/use-confirm";
 import { useRouter } from "next/navigation";
+import { format } from "date-fns";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -19,7 +19,11 @@ import {
     DropdownMenuRadioGroup,
     DropdownMenuRadioItem,
 } from "@/components/ui/dropdown-menu";
-import { Hint } from "@/components/hint";
+import { Badge } from "@/components/ui/badge";
+import { MemberAvatar } from "@/components/member-avatar";
+import { PanelHeader } from "@/components/panel-header";
+import { EmptyState } from "@/components/empty-state";
+import { ZelraLoader } from "@/components/zelra-loader";
 
 interface Props {
     memberId: Id<"members">;
@@ -29,20 +33,24 @@ interface Props {
 export const Profile = ({ memberId, onClose }: Props) => {
     const router = useRouter();
     const workspaceId = useWorkspaceId();
+    const routeMemberId = useMemberId();
 
     const [LeaveDialog, confirmLeave] = useConfirm(
-        "Leave workspace",
-        "Are you sure do you want to leave this workspace?",
+        "Leave this workspace?",
+        "You'll lose access to its channels and messages. You'll need a new invite to rejoin.",
+        { confirmLabel: "Leave workspace", tone: "danger" },
     );
 
     const [RemoveDialog, confirmRemove] = useConfirm(
-        "Remove member",
-        "Are you sure do you want to remove this member?",
+        "Remove this member?",
+        "They'll lose access to the workspace and its channels. You can invite them again later.",
+        { confirmLabel: "Remove member", tone: "danger" },
     );
 
     const [UpdateDialog, confirmUpdate] = useConfirm(
-        "Change role",
-        "Are you sure do you want to change this member's role?",
+        "Change role?",
+        "Admins can create and delete channels, change roles, remove members and manage invites.",
+        { confirmLabel: "Change role" },
     );
 
     const { data: currentMember, isLoading: isLoadingCurrentMember } = useCurrentMember({ workspaceId });
@@ -100,17 +108,19 @@ export const Profile = ({ memberId, onClose }: Props) => {
         })
     };
 
+    const copyEmail = (email: string) => {
+        navigator.clipboard
+            .writeText(email)
+            .then(() => toast.success("Email copied"))
+            .catch(() => toast.error("Couldn't copy the email"));
+    };
+
     if (isLoadingMember || isLoadingCurrentMember) {
         return (
             <div className="h-full flex flex-col">
-                <div className="flex justify-between items-center p-2 border-b">
-                    <p className="text-lg font-bold">Profile</p>
-                    <Button onClick={onClose} size="iconSm" variant="ghost">
-                        <XIcon className="size-5 stroke-[1.5]" />
-                    </Button>
-                </div>
-                <div className="flex h-full items-center justify-center">
-                    <Loader2 className="size-5 animate-spin text-muted-foreground" />
+                <PanelHeader title="Profile" onClose={onClose} />
+                <div className="grid flex-1 place-items-center text-ink-3">
+                    <ZelraLoader label="Loading profile" />
                 </div>
             </div>
         );
@@ -119,21 +129,20 @@ export const Profile = ({ memberId, onClose }: Props) => {
     if (!member) {
         return (
             <div className="h-full flex flex-col">
-                <div className="flex justify-between items-center p-2 border-b">
-                    <p className="text-lg font-bold">Profile</p>
-                    <Button onClick={onClose} size="iconSm" variant="ghost">
-                        <XIcon className="size-5 stroke-[1.5]" />
-                    </Button>
-                </div>
-                <div className="flex flex-col gap-y-2 h-full items-center justify-center">
-                    <AlertTriangle className="size-5 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">Profile not found</p>
-                </div>
+                <PanelHeader title="Profile" onClose={onClose} />
+                <EmptyState
+                    icon={<UserXIcon />}
+                    title="Profile not found"
+                    description="This person may have left the workspace."
+                />
             </div>
         );
     }
 
-    const avatarFallback = member.user.name?.[0] ?? "M";
+    const name = member.user.name ?? "Member";
+    const isSelf = currentMember?._id === memberId;
+    const canManage = currentMember?.role === "admin" && !isSelf;
+    const canLeave = isSelf && currentMember?.role !== "admin";
 
     return (
         <>
@@ -141,82 +150,88 @@ export const Profile = ({ memberId, onClose }: Props) => {
             <RemoveDialog />
             <LeaveDialog />
             <div className="h-full flex flex-col">
-                <div className="flex justify-between items-center p-2 border-b">
-                    <p className="text-lg font-bold">Profile</p>
-                    <Button onClick={onClose} size="iconSm" variant="ghost">
-                        <XIcon className="size-5 stroke-[1.5]" />
-                    </Button>
-                </div>
-                <div className="flex flex-col items-center justify-center p-4">
-                    <Avatar className="max-w-[256px] max-h-[256px] size-full">
-                        <AvatarImage src={member.user.image} />
-                        <AvatarFallback className="aspect-square text-6xl">
-                            {avatarFallback}
-                        </AvatarFallback>
-                    </Avatar>
-                </div>
-                <div className="flex flex-col p-4">
-                    <p className="text-xl font-bold">{member.user.name}
-                        {member?.role === "admin" ? (
-                            <Hint label="Admin">
-                                <span className="mx-2 w-2 h-2 bg-blue-400 rounded-full inline-block relative -top-0.5"></span>
-                            </Hint>
-                        ) : null}
-                    </p>
-                    {currentMember?.role === "admin" &&
-                        currentMember?._id !== memberId ? (
-                        <div className="flex items-center gap-2 mt-4">
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="outline" className="w-1/2 capitalize">
-                                        {member.role} <ChevronDownIcon className="size-4 ml-2" />
-                                    </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent className="w-full">
-                                    <DropdownMenuRadioGroup
-                                        value={member.role}
-                                        onValueChange={(role) => onUpdate(role as "admin" | "member")}
-                                    >
-                                        <DropdownMenuRadioItem value="admin">
-                                            Admin
-                                        </DropdownMenuRadioItem>
-                                        <DropdownMenuRadioItem value="member">
-                                            Member
-                                        </DropdownMenuRadioItem>
-                                    </DropdownMenuRadioGroup>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                            <Button onClick={onRemove} className="w-1/2">
-                                Remove
-                            </Button>
-                        </div>
-                    ) : currentMember?._id === memberId &&
-                        currentMember?.role !== "admin" ? (
-                        <div className="mt-4">
-                            <Button onClick={onLeave} className="w-full">
-                                Leave
-                            </Button>
-                        </div>
-                    ) : null
-                    }
-                </div>
-                <Separator />
-                <div className="flex flex-col p-4">
-                    <p className="text-sm font-bold mb-4">Contact information</p>
-                    <div className="flex items-center gap-2">
-                        <div className="size-9 rounded-md bg-muted flex items-center justify-center">
-                            <MailIcon className="size-4" />
-                        </div>
-                        <div className="flex flex-col">
-                            <p className="text-[13px] font-semibold text-muted-foreground">Email Address</p>
-                            <Link
-                                href={`mailto:${member.user.email}`}
-                                className="text-sm hover:underline text-[#1264a3]"
-                            >
-                                {member.user.email}
-                            </Link>
+                <PanelHeader title="Profile" onClose={onClose} />
+                <div className="min-h-0 flex-1 overflow-y-auto messages-scrollbar">
+                    <div className="grid justify-items-center gap-2 px-5 pb-5 pt-7 text-center">
+                        <MemberAvatar name={name} image={member.user.image} size="3xl" />
+                        <h2 className="mt-1.5 font-display text-xl font-semibold">{name}</h2>
+                        <Badge variant={member.role === "admin" ? "default" : "muted"}>
+                            {member.role === "admin" ? "Admin" : "Member"}
+                        </Badge>
+                        <p className="text-[12.5px] text-ink-3">Member since {format(member._creationTime, "MMM d, yyyy")}</p>
+                        <div className="mt-2 flex flex-wrap justify-center gap-2">
+                            {routeMemberId !== memberId && (
+                                <Button asChild size="sm">
+                                    <Link href={`/workspace/${workspaceId}/member/${memberId}`}>
+                                        <MessageSquareTextIcon />
+                                        {isSelf ? "Notes to self" : "Message"}
+                                    </Link>
+                                </Button>
+                            )}
+                            {member.user.email && (
+                                <Button size="sm" variant="outline" onClick={() => copyEmail(member.user.email!)}>
+                                    <CopyIcon />
+                                    Copy email
+                                </Button>
+                            )}
                         </div>
                     </div>
+                    <section className="grid gap-2.5 border-t border-line px-5 py-4">
+                        <h3 className="text-xs font-semibold text-ink-3">Contact information</h3>
+                        <div className="flex items-center gap-3">
+                            <div className="grid size-9 shrink-0 place-items-center rounded-lg bg-hover text-ink-2">
+                                <MailIcon className="size-4" />
+                            </div>
+                            <div className="min-w-0">
+                                <p className="text-xs text-ink-3">Email address</p>
+                                <Link
+                                    href={`mailto:${member.user.email}`}
+                                    className="block truncate text-sm text-cobalt-ink hover:underline"
+                                >
+                                    {member.user.email}
+                                </Link>
+                            </div>
+                        </div>
+                    </section>
+                    {canManage && (
+                        <section className="grid gap-3 border-t border-line px-5 py-4">
+                            <h3 className="text-xs font-semibold text-ink-3">Manage member</h3>
+                            <div className="flex flex-wrap items-center gap-2">
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="outline" size="sm" className="capitalize" aria-label={`Role: ${member.role}`}>
+                                            Role: {member.role} <ChevronDownIcon className="size-4" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="start" className="w-48">
+                                        <DropdownMenuRadioGroup
+                                            value={member.role}
+                                            onValueChange={(role) => onUpdate(role as "admin" | "member")}
+                                        >
+                                            <DropdownMenuRadioItem value="admin">
+                                                Admin
+                                            </DropdownMenuRadioItem>
+                                            <DropdownMenuRadioItem value="member">
+                                                Member
+                                            </DropdownMenuRadioItem>
+                                        </DropdownMenuRadioGroup>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                                <Button onClick={onRemove} size="sm" variant="destructive-outline">
+                                    <UserXIcon />
+                                    Remove from workspace
+                                </Button>
+                            </div>
+                        </section>
+                    )}
+                    {canLeave && (
+                        <section className="border-t border-line px-5 py-4">
+                            <Button onClick={onLeave} size="sm" variant="destructive-outline">
+                                <LogOutIcon />
+                                Leave workspace
+                            </Button>
+                        </section>
+                    )}
                 </div>
             </div>
         </>

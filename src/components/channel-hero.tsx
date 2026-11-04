@@ -1,27 +1,53 @@
 import { format } from "date-fns";
+import { PencilIcon, UserPlusIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
+
+import { Button } from "@/components/ui/button";
+import { useCurrentMember } from "@/features/members/api/use-current-member";
+import { useWorkspaceId } from "@/hooks/use-workspace-id";
 
 interface Props {
   name: string;
   creationTime: number;
+  isEmpty?: boolean;
 }
 
-export const ChannelHero = ({ name, creationTime }: Props) => {
-  return (
-    <div className="mt-[88px] mx-6 mb-6">
-      <div className="flex items-center gap-2 text-3xl font-semibold text-gray-900">
-        <span className="text-slate-700">#</span>
-        <h1>{name}</h1>
-      </div>
+// The top of a channel's history. When nobody has posted yet, it invites the first message.
+export const ChannelHero = ({ name, creationTime, isEmpty }: Props) => {
+  const router = useRouter();
+  const workspaceId = useWorkspaceId();
+  const { data: member } = useCurrentMember({ workspaceId });
 
-      <div className="mt-2 text-sm text-muted-foreground leading-relaxed">
-        <p>
-          This channel was created on{" "}
-          <span className="font-medium text-gray-900">
-            {format(creationTime, "MMMM do, yyyy")}
-          </span>
-          . This is the very beginning of the <strong className="text-gray-900">{name}</strong> channel.
-        </p>
+  const focusComposer = () => {
+    document.querySelector<HTMLElement>("[data-composer] .ql-editor")?.focus();
+  };
+
+  return (
+    <div className="mx-5 mb-4 mt-14 grid justify-items-start gap-2.5">
+      <div className="cut grid size-16 place-items-center bg-night font-display text-3xl font-semibold text-n-ink hatch [--cut:14px]" aria-hidden="true">
+        #
       </div>
+      <h1 className="font-display text-[26px] font-semibold leading-tight tracking-[-0.02em] text-ink">
+        {isEmpty ? `This is the start of #${name}` : `#${name}`}
+      </h1>
+      <p className="max-w-xl text-sm text-ink-2">
+        Created {format(creationTime, "MMMM do, yyyy")}.{" "}
+        {isEmpty ? "Nobody has posted yet, so the first message sets the tone." : "This is the very beginning of the channel's history."}
+      </p>
+      {isEmpty && (
+        <div className="mt-1 flex flex-wrap gap-2">
+          <Button size="sm" onClick={focusComposer}>
+            <PencilIcon />
+            Write the first message
+          </Button>
+          {member?.role === "admin" && (
+            <Button size="sm" variant="outline" onClick={() => router.push(`/workspace/${workspaceId}/settings?tab=invitations`)}>
+              <UserPlusIcon />
+              Invite people
+            </Button>
+          )}
+        </div>
+      )}
     </div>
   );
 };

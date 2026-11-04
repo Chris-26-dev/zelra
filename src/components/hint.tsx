@@ -1,9 +1,8 @@
 "use client";
 
-import { 
+import {
     Tooltip,
     TooltipContent,
-    TooltipProvider,
     TooltipTrigger
 } from "@/components/ui/tooltip";
 
@@ -12,26 +11,29 @@ interface Props {
     children: React.ReactNode;
     side?: "top" | "right" | "bottom" | "left";
     align?: "start" | "center" | "end",
+    shortcut?: string;
 };
 
 export const Hint = ({
     label,
     children,
     side,
-    align
+    align,
+    shortcut,
 }:Props) => {
     return (
-        <TooltipProvider>
-            <Tooltip delayDuration={50}>
-                <TooltipTrigger asChild>
-                    {children}
-                </TooltipTrigger>
-                <TooltipContent side={side} align={align} className="bg-black text-white border border-white/5">
-                    <p className="font-medium text-xs">
-                        {label}
-                    </p>
-                </TooltipContent>
-            </Tooltip>
-        </TooltipProvider>
+        <Tooltip>
+            <TooltipTrigger asChild>
+                {children}
+            </TooltipTrigger>
+            <TooltipContent side={side} align={align}>
+                <p className="flex items-center gap-2">
+                    {label}
+                    {shortcut && (
+                        <span className="font-mono text-[10.5px] opacity-70">{shortcut}</span>
+                    )}
+                </p>
+            </TooltipContent>
+        </Tooltip>
     )
 }
