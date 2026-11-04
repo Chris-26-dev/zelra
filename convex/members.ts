@@ -2,6 +2,8 @@ import { v } from "convex/values";
 import { mutation, query, QueryCtx } from "./_generated/server";
 import { auth } from "./auth";
 import { Id } from "./_generated/dataModel";
+import { getCurrentMember, requireUserId } from "./lib/access";
+import { toProfileUser, toPublicUser } from "./lib/users";
 
 const populateUser = (ctx: QueryCtx, id: Id<"users">) => {
     return ctx.db.get(id);
@@ -22,11 +24,7 @@ export const getById = query({
             return null;
         }
 
-        const currentMember = await ctx.db
-            .query("members")
-            .withIndex("by_workspace_id_user_id", (q) => 
-                q.eq("workspaceId", member.workspaceId).eq("userId", userId),
-            );
+        const currentMember = await getCurrentMember(ctx, member.workspaceId);
 
         if (!currentMember) {
             return null;
@@ -40,7 +38,7 @@ export const getById = query({
 
         return {
             ...member,
-            user,
+            user: toProfileUser(user),
         };
     },
 });
@@ -54,13 +52,7 @@ export const get = query({
             return [];
         }
 
-        const member = await ctx.db
-            .query("members")
-            .withIndex("by_workspace_id_user_id", (q) =>
-                q.eq("workspaceId", args.workspaceId).eq("userId", userId)
-            )
-            .unique();
-
+        const member = await getCurrentMember(ctx, args.workspaceId);
 
         if (!member) {
             return [];
@@ -79,7 +71,7 @@ export const get = query({
             if (user) {
                 members.push({
                     ...member,
-                    user,
+                    user: toPublicUser(user),
                 });
             }
         }
@@ -97,13 +89,7 @@ export const current = query({
             return null;
         }
 
-        const member = await ctx.db
-            .query("members")
-            .withIndex("by_workspace_id_user_id", (q) =>
-                q.eq("workspaceId", args.workspaceId).eq("userId", userId)
-            )
-            .unique();
-
+        const member = await getCurrentMember(ctx, args.workspaceId);
 
         if (!member) {
             return null;
@@ -119,11 +105,7 @@ export const update = mutation({
         role: v.union(v.literal("admin"), v.literal("member")),
     },
     handler: async (ctx, args) => {
-        const userId = await auth.getUserId(ctx);
-
-        if (!userId) {
-            throw new Error("Unauthorized");
-        }
+        await requireUserId(ctx);
 
         const member = await ctx.db.get(args.id);
 
@@ -131,12 +113,7 @@ export const update = mutation({
             throw new Error("Member not found");
         }
 
-        const currentMember = await ctx.db
-            .query("members")
-            .withIndex("by_workspace_id_user_id", (q) => 
-                q.eq("workspaceId", member.workspaceId).eq("userId", userId),
-            )
-            .unique();
+        const currentMember = await getCurrentMember(ctx, member.workspaceId);
 
         if (!currentMember || currentMember.role !== "admin") {
             throw new Error("Unauthorized");
@@ -155,11 +132,7 @@ export const remove = mutation({
         id: v.id("members"),
     },
     handler: async (ctx, args) => {
-        const userId = await auth.getUserId(ctx);
-
-        if (!userId) {
-            throw new Error("Unauthorized");
-        }
+        await requireUserId(ctx);
 
         const member = await ctx.db.get(args.id);
 
@@ -167,12 +140,7 @@ export const remove = mutation({
             throw new Error("Member not found");
         }
 
-        const currentMember = await ctx.db
-            .query("members")
-            .withIndex("by_workspace_id_user_id", (q) => 
-                q.eq("workspaceId", member.workspaceId).eq("userId", userId),
-            )
-            .unique();
+        const currentMember = await getCurrentMember(ctx, member.workspaceId);
 
         if (!currentMember) {
             throw new Error("Unauthorized");
@@ -184,6 +152,11 @@ export const remove = mutation({
 
         if (currentMember._id === args.id && currentMember.role === "admin") {
             throw new Error("Cannot remove yourself if you are an admin.")
+        }
+
+        //Members may only remove themselves (leave); removing anyone else requires an admin
+        if (currentMember._id !== args.id && currentMember.role !== "admin") {
+            throw new Error("Unauthorized");
         }
 
         //Remove all relations here, all messages, conversations and reactions that the user created
