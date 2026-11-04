@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { auth } from "./auth";
+import { getCurrentMember, getMembership, requireAdmin } from "./lib/access";
 
 const generateCode = () => {
     const code = Array.from(
@@ -33,12 +34,7 @@ export const join = mutation({
             throw new Error("Invalid join code");
         }
 
-        const existingMember = await ctx.db
-            .query("members")
-            .withIndex("by_workspace_id_user_id", (q) =>
-                q.eq("workspaceId", args.workspaceId).eq("userId", userId)
-            )
-            .unique();
+        const existingMember = await getMembership(ctx, args.workspaceId, userId);
 
         if (existingMember) {
             throw new Error("Already a member of this workspace")
@@ -65,16 +61,7 @@ export const newJoinCode = mutation({
             throw new Error("Unauthorized");
         }
 
-        const member = await ctx.db
-            .query("members")
-            .withIndex("by_workspace_id_user_id", (q) =>
-                q.eq("workspaceId", args.workspaceId).eq("userId", userId),
-            )
-            .unique();
-
-        if (!member || member.role !== "admin") {
-            throw new Error("Unauthorized");
-        }
+        await requireAdmin(ctx, args.workspaceId);
 
         const joinCode = generateCode();
 
@@ -163,12 +150,7 @@ export const getInfoById = query({
             return null;
         }
 
-        const member = await ctx.db
-            .query("members")
-            .withIndex("by_workspace_id_user_id", (q) =>
-                q.eq("workspaceId", args.id).eq("userId", userId),
-            )
-            .unique();
+        const member = await getCurrentMember(ctx, args.id);
 
         const workspace = await ctx.db.get(args.id);
 
@@ -189,12 +171,7 @@ export const getById = query({
             throw new Error("Unauthorized");
         }
 
-        const member = await ctx.db
-            .query("members")
-            .withIndex("by_workspace_id_user_id", (q) =>
-                q.eq("workspaceId", args.id).eq("userId", userId),
-            )
-            .unique();
+        const member = await getCurrentMember(ctx, args.id);
 
         if (!member) {
             return null;
@@ -217,16 +194,7 @@ export const update = mutation({
             throw new Error("Unauthorized");
         }
 
-        const member = await ctx.db
-            .query("members")
-            .withIndex("by_workspace_id_user_id", (q) =>
-                q.eq("workspaceId", args.id).eq("userId", userId),
-            )
-            .unique();
-
-        if (!member || member.role !== "admin") {
-            throw new Error("Unauthorized");
-        }
+        await requireAdmin(ctx, args.id);
 
         await ctx.db.patch(args.id, {
             name: args.name,
@@ -248,16 +216,7 @@ export const remove = mutation({
             throw new Error("Unauthorized");
         }
 
-        const member = await ctx.db
-            .query("members")
-            .withIndex("by_workspace_id_user_id", (q) =>
-                q.eq("workspaceId", args.id).eq("userId", userId),
-            )
-            .unique();
-
-        if (!member || member.role !== "admin") {
-            throw new Error("Unauthorized");
-        }
+        await requireAdmin(ctx, args.id);
 
         //This will find all members inside of this workspaceId 
         const [members, channels, conversations, messages, reactions] = await Promise.all([

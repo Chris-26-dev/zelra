@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
 import { auth } from "./auth";
+import { getCurrentMember, requireAdmin } from "./lib/access";
 
 export const remove = mutation({
     args: {
@@ -19,16 +20,7 @@ export const remove = mutation({
             throw new Error("Channel not found")
         }
 
-        const member = await ctx.db
-            .query("members")
-            .withIndex("by_workspace_id_user_id", (q) =>
-                q.eq("workspaceId", channel.workspaceId).eq("userId", userId),
-            )
-            .unique();
-
-        if (!member || member.role !== "admin") {
-            throw new Error("Unauthorized");
-        }
+        await requireAdmin(ctx, channel.workspaceId);
 
         const [messages] = await Promise.all([
             ctx.db
@@ -65,16 +57,7 @@ export const update = mutation({
             throw new Error("Channel not found")
         }
 
-        const member = await ctx.db
-            .query("members")
-            .withIndex("by_workspace_id_user_id", (q) =>
-                q.eq("workspaceId", channel.workspaceId).eq("userId", userId),
-            )
-            .unique();
-
-        if (!member || member.role !== "admin") {
-            throw new Error("Unauthorized");
-        }
+        await requireAdmin(ctx, channel.workspaceId);
 
         await ctx.db.patch(args.id, {
             name: args.name,
@@ -96,16 +79,7 @@ export const create = mutation({
             throw new Error("Unauthorized");
         }
 
-        const member = await ctx.db
-            .query("members")
-            .withIndex("by_workspace_id_user_id", (q) =>
-                q.eq("workspaceId", args.workspaceId).eq("userId", userId),
-            )
-            .unique();
-
-        if (!member || member.role !== "admin") {
-            throw new Error("Unauthorized");
-        }
+        await requireAdmin(ctx, args.workspaceId);
 
         const parsedName = args.name
             .replace(/\s+/g, "-")
@@ -138,12 +112,7 @@ export const getById = query({
             return null;
         }
 
-        const member = await ctx.db
-            .query("members")
-            .withIndex("by_workspace_id_user_id", (q) =>
-                q.eq("workspaceId", channel.workspaceId).eq("userId", userId),
-            )
-            .unique()
+        const member = await getCurrentMember(ctx, channel.workspaceId);
 
         if (!member) {
             return null;
@@ -164,12 +133,7 @@ export const get = query({
             return [];
         }
 
-        const member = await ctx.db
-            .query("members")
-            .withIndex("by_workspace_id_user_id", (q) =>
-                q.eq("workspaceId", args.workspaceId).eq("userId", userId),
-            )
-            .unique();
+        const member = await getCurrentMember(ctx, args.workspaceId);
 
         if (!member) {
             return [];

@@ -2,7 +2,9 @@ import { useMutation } from "convex/react";
 
 import { api } from "../../../../convex/_generated/api";
 import { useCallback, useMemo, useState } from "react";
+import { Id } from "../../../../convex/_generated/dataModel";
 
+type RequestType = { workspaceId: Id<"workspaces"> };
 type ResponseType = string | null;
 
 type Options = {
@@ -24,14 +26,13 @@ export const useGenerateUploadUrl = () => {
 
     const mutation = useMutation(api.upload.generateUploadUrl);
 
-    // eslint-disable-next-line @typescript-eslint/no-empty-object-type
-    const mutate = useCallback(async (_values: {}, options?: Options) => {
+    const mutate = useCallback(async (values: RequestType, options?: Options) => {
         try {
             setData(null);
             setError(null);
             setStatus("pending");
 
-            const response = await mutation();
+            const response = await mutation(values);
             options?.onSuccess?.(response);
             return response;
         } catch (error) {

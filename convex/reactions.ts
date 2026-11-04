@@ -1,20 +1,7 @@
 import { v } from "convex/values";
-import { Id } from "./_generated/dataModel";
-import { mutation, QueryCtx } from "./_generated/server";
+import { mutation } from "./_generated/server";
 import { auth } from "./auth";
-
-const getMember = async (
-    ctx: QueryCtx,
-    workspaceId: Id<"workspaces">,
-    userId: Id<"users">,
-) => {
-    return ctx.db
-        .query("members")
-        .withIndex("by_workspace_id_user_id", (q) =>
-            q.eq("workspaceId", workspaceId).eq("userId", userId),
-        )
-        .unique();
-};
+import { getMessageAccess } from "./lib/access";
 
 export const toggle = mutation({
     args: { messageId: v.id("messages"), value: v.string() },
@@ -31,11 +18,14 @@ export const toggle = mutation({
             throw new Error("Message not found");
         }
 
-        const member = await getMember(ctx, message.workspaceId, userId);
+        //Same rule as reading the message: channel member, or participant for a DM
+        const access = await getMessageAccess(ctx, message);
 
-        if (!member) {
+        if (!access) {
             throw new Error("Unauthorized");
         }
+
+        const member = access.member;
 
         const existingMessageReactionFromUser = await ctx.db
             .query("reactions")

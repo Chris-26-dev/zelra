@@ -1,6 +1,7 @@
 import { v } from "convex/values";
 import { mutation } from "./_generated/server";
 import { auth } from "./auth";
+import { getCurrentMember } from "./lib/access";
 
 export const createOrGet = mutation({
     args: {
@@ -14,12 +15,7 @@ export const createOrGet = mutation({
             throw new Error("Unauthorized");
         }
 
-        const currentMember = await ctx.db
-            .query("members")
-            .withIndex("by_workspace_id_user_id", (q) =>
-                q.eq("workspaceId", args.workspaceId).eq("userId", userId),
-            )
-            .unique();
+        const currentMember = await getCurrentMember(ctx, args.workspaceId);
 
         const otherMember = await ctx.db.get(args.memberId);
 
