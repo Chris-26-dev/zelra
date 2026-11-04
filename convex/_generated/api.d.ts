@@ -17,6 +17,8 @@ import type * as auth from "../auth.js";
 import type * as channels from "../channels.js";
 import type * as conversations from "../conversations.js";
 import type * as http from "../http.js";
+import type * as lib_access from "../lib/access.js";
+import type * as lib_users from "../lib/users.js";
 import type * as members from "../members.js";
 import type * as messages from "../messages.js";
 import type * as reactions from "../reactions.js";
@@ -37,6 +39,8 @@ declare const fullApi: ApiFromModules<{
   channels: typeof channels;
   conversations: typeof conversations;
   http: typeof http;
+  "lib/access": typeof lib_access;
+  "lib/users": typeof lib_users;
   members: typeof members;
   messages: typeof messages;
   reactions: typeof reactions;
