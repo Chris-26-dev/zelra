@@ -1,13 +1,30 @@
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { Field } from "@/components/ui/field"
 import { FaGoogle, FaGithub } from "react-icons/fa"
 
 import { SignInFlow } from "../types"
-import Image from "next/image"
 import { useState } from "react"
 import { OctagonAlertIcon } from "lucide-react"
 import { useAuthActions } from "@convex-dev/auth/react"
+
+import { ZelraLoader } from "@/components/zelra-loader"
+import { cn } from "@/lib/utils"
+import { PasswordInput } from "./password-input"
+
+const EMAIL = /^\S+@\S+\.\S+$/;
+// The password provider rejects anything shorter than this.
+const MIN_PASSWORD = 8;
+
+// 0 = too short, 1 = okay, 2 = good, 3 = strong
+const passwordStrength = (value: string) => {
+    if (value.length < MIN_PASSWORD) return 0;
+    let score = 1;
+    if (/[a-zA-Z]/.test(value) && /\d/.test(value)) score++;
+    if (/[^a-zA-Z0-9]/.test(value) || value.length >= 14) score++;
+    return score;
+};
+const STRENGTH_LABEL = ["Too short", "Okay", "Good", "Strong"];
 
 interface Props {
     setState: (state: SignInFlow) => void;
@@ -21,9 +38,19 @@ export const SignUpCard = ({ setState }: Props) => {
     const [confirmPassword, setConfirmPassword] = useState("");
     const [error, setError] = useState("");
     const [pending, setPending] = useState(false);
+    const [method, setMethod] = useState<"password" | "github" | "google" | null>(null);
+    const [emailTouched, setEmailTouched] = useState(false);
+
+    const strength = passwordStrength(password);
+    const emailError = emailTouched && email.length > 0 && !EMAIL.test(email) ? "Enter a full email address, like name@company.com." : null;
 
     const onPasswordSignUp = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+
+        if (password.length < MIN_PASSWORD) {
+            setError("Password too short");
+            return;
+        }
 
         if (password !== confirmPassword) {
             setError("Passwords do not match");
@@ -31,6 +58,7 @@ export const SignUpCard = ({ setState }: Props) => {
         }
 
         setPending(true);
+        setMethod("password");
 
         signIn("password", { name, email, password, flow: "signUp" })
             .catch(() => {
@@ -38,118 +66,128 @@ export const SignUpCard = ({ setState }: Props) => {
             })
             .finally(() => {
                 setPending(false);
+                setMethod(null);
             });
     };
 
     const onProviderSignUp = (value: "github" | "google") => {
         setPending(true)
+        setMethod(value);
         signIn(value)
             .finally(() => {
                 setPending(false);
+                setMethod(null);
             })
     };
 
-
+    const mismatch = error === "Passwords do not match";
+    const tooShort = error === "Password too short";
 
     return (
-        <div className="flex flex-col gap-6">
-            <Card className="overflow-hidden p-0 border-0 shadow-none">
-                <CardContent className="grid p-0 md:grid-cols-2">
-                    <form onSubmit={onPasswordSignUp} className="p-6 md:p-8">
-                        <div className="flex flex-col gap-6">
-                            <div className="flex flex-col items-center text-center">
-                                <h1 className="text-2xl font-bold">
-                                    Let&apos;s get started
-                                </h1>
-                                <p className="text-muted-foreground text-balance">
-                                    Create your account
-                                </p>
-                            </div>
-                            <div className="grid gap-3">
-                                <Input
-                                    disabled={pending}
-                                    value={name}
-                                    onChange={(e) => setName(e.target.value)}
-                                    placeholder="Full name"
-                                    required
-                                />
-                                <Input
-                                    disabled={pending}
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    placeholder="Email"
-                                    type="email"
-                                    required
-                                />
-                                <Input
-                                    disabled={pending}
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    placeholder="Password"
-                                    type="password"
-                                    required
-                                />
-                                <Input
-                                    disabled={pending}
-                                    value={confirmPassword}
-                                    onChange={(e) => setConfirmPassword(e.target.value)}
-                                    placeholder="Confirm password"
-                                    type="password"
-                                    required
-                                />
-                            </div>
-                            {!!error && (
-                                <div className="bg-destructive/15 p-3 rounded-md flex items-center gap-x-2 text-sm text-destructive">
-                                    <OctagonAlertIcon className="size-4" />
-                                    <p>{error}</p>
-                                </div>
-                            )}
-                            <Button type="submit" className="w-full" size="lg" disabled={pending}>
-                                Sign Up
-                            </Button>
-                            <div className="after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t">
-                                <span className="bg-card text-muted-foreground relative z-10 px-2">
-                                    Or continue with
-                                </span>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <Button
-                                    disabled={pending}
-                                    onClick={() => onProviderSignUp("google")}
-                                    variant="outline"
-                                    type="button"
-                                    className="w-full"
-                                >
-                                    <FaGoogle />
-                                </Button>
-                                <Button
-                                    disabled={pending}
-                                    onClick={() => onProviderSignUp("github")}
-                                    variant="outline"
-                                    type="button"
-                                    className="w-full"
-                                >
-                                    <FaGithub />
-                                </Button>
-                            </div>
-                            <p className="text-center text-sm text-muted-foreground">
-                                Already have an account? <span onClick={() => setState("signIn")} className="text-sky-800 hover:underline cursor-pointer">Sign in</span>
-                            </p>
-                        </div>
-
-
-                    </form>
-                    <div className="bg-radial from-sky-700 to-blue-900 relative hidden md:flex flex-col gap-y-4 items-center justify-center">
-                        <Image src="/logo.svg" alt="Image" width={92} height={92} className="h-[92px] w-[92px]" />
-                        <p className="text-2xl font-semibold text-white">
-                            ZELRA
-                        </p>
-                    </div>
-                </CardContent>
-            </Card>
-            <div className="text-white *:[a]:hover:text-primary text-center text-xs text-balance *:[a]:underline *:[a]:underline-offset-4">
-                By clicking continue, you agree to our <a href="#">Terms of Service</a> and <a href="#"> Privacy Policy</a>
+        <form onSubmit={onPasswordSignUp} className="grid gap-4">
+            <div>
+                <h2 className="font-display text-[26px] font-semibold leading-tight tracking-[-0.02em]">Create your account</h2>
+                <p className="mt-1.5 text-sm text-ink-2">One account works across every workspace you join.</p>
             </div>
-        </div>
+            <Field id="signup-name" label="Full name">
+                <Input
+                    disabled={pending}
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    autoComplete="name"
+                    autoFocus
+                    required
+                />
+            </Field>
+            <Field id="signup-email" label="Email" error={emailError}>
+                <Input
+                    disabled={pending}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    onBlur={() => setEmailTouched(true)}
+                    placeholder="you@company.com"
+                    type="email"
+                    autoComplete="email"
+                    required
+                />
+            </Field>
+            <div className="grid gap-2">
+                <Field id="signup-password" label="Password" error={tooShort ? `Use at least ${MIN_PASSWORD} characters.` : null}>
+                    <PasswordInput
+                        disabled={pending}
+                        value={password}
+                        onChange={(e) => { setPassword(e.target.value); if (tooShort) setError(""); }}
+                        autoComplete="new-password"
+                        required
+                    />
+                </Field>
+                {/* Strength meter: three leaning segments. */}
+                <div className="flex items-center gap-2.5" aria-live="polite">
+                    <div className="flex flex-1 gap-1" aria-hidden="true">
+                        {[1, 2, 3].map((level) => (
+                            <span
+                                key={level}
+                                className={cn(
+                                    "lean-both h-1.5 flex-1 transition-colors duration-200 [--lean:3px]",
+                                    password.length === 0 || strength < level
+                                        ? "bg-line"
+                                        : strength === 1 ? "bg-ink-3" : strength === 2 ? "bg-cobalt" : "bg-ok"
+                                )}
+                            />
+                        ))}
+                    </div>
+                    <span className={cn("w-24 text-right text-xs", password.length === 0 ? "text-ink-3" : strength === 0 ? "text-danger" : "text-ink-2")}>
+                        {password.length === 0 ? `${MIN_PASSWORD}+ characters` : STRENGTH_LABEL[strength]}
+                    </span>
+                </div>
+            </div>
+            <Field id="signup-confirm" label="Confirm password" error={mismatch ? "The passwords don't match. Re-enter them both." : null}>
+                <PasswordInput
+                    disabled={pending}
+                    value={confirmPassword}
+                    onChange={(e) => { setConfirmPassword(e.target.value); if (mismatch) setError(""); }}
+                    autoComplete="new-password"
+                    required
+                />
+            </Field>
+            {!!error && !mismatch && !tooShort && (
+                <div role="alert" className="flex items-center gap-x-2 rounded-lg bg-danger-wash p-3 text-sm text-danger motion-safe:animate-rise">
+                    <OctagonAlertIcon className="size-4 shrink-0" />
+                    <p>{error}</p>
+                </div>
+            )}
+            <Button type="submit" className="w-full" size="lg" disabled={pending}>
+                {method === "password" ? <ZelraLoader label="Creating your account" /> : "Create account"}
+            </Button>
+            <div className="flex items-center gap-3 text-xs text-ink-3 before:h-px before:flex-1 before:bg-line after:h-px after:flex-1 after:bg-line">
+                or
+            </div>
+            <div className="grid gap-2">
+                <Button
+                    disabled={pending}
+                    onClick={() => onProviderSignUp("google")}
+                    variant="outline"
+                    type="button"
+                    className="w-full"
+                >
+                    {method === "google" ? <ZelraLoader label="Opening Google" /> : <><FaGoogle />Continue with Google</>}
+                </Button>
+                <Button
+                    disabled={pending}
+                    onClick={() => onProviderSignUp("github")}
+                    variant="outline"
+                    type="button"
+                    className="w-full"
+                >
+                    {method === "github" ? <ZelraLoader label="Opening GitHub" /> : <><FaGithub />Continue with GitHub</>}
+                </Button>
+            </div>
+            <p className="text-center text-sm text-ink-3">
+                Already have an account?{" "}
+                <button type="button" onClick={() => setState("signIn")} className="font-medium text-cobalt-ink hover:underline">
+                    Sign in
+                </button>
+            </p>
+        </form>
     )
 }

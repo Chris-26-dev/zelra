@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Geologica } from "next/font/google";
 import { ConvexAuthNextjsServerProvider } from "@convex-dev/auth/nextjs/server";
 
 import { ConvexClientProvider } from "@/components/convex-client-provider";
@@ -7,6 +7,8 @@ import "./globals.css";
 import { Modals } from "@/components/modals";
 import { Toaster } from "@/components/ui/sonner";
 import { JotaiProvider } from "@/components/jotai-provider";
+import { ThemeProvider } from "@/components/theme-provider";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -16,6 +18,13 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+});
+
+// Display face for names, titles and headings; the SHRP axis cuts its curves into facets like the logo.
+const geologica = Geologica({
+  variable: "--font-geologica",
+  subsets: ["latin"],
+  axes: ["SHRP"],
 });
 
 export const metadata: Metadata = {
@@ -33,17 +42,21 @@ export default function RootLayout({
 }>) {
   return (
     <ConvexAuthNextjsServerProvider>
-      <html lang="en">
+      <html lang="en" suppressHydrationWarning>
         <body
-          className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+          className={`${geistSans.variable} ${geistMono.variable} ${geologica.variable} antialiased`}
         >
-          <ConvexClientProvider>
-            <JotaiProvider>
-              <Toaster />
-              <Modals />
-              {children}
-            </JotaiProvider>
-          </ConvexClientProvider>
+          <ThemeProvider>
+            <ConvexClientProvider>
+              <JotaiProvider>
+                <TooltipProvider delayDuration={250}>
+                  <Toaster />
+                  <Modals />
+                  {children}
+                </TooltipProvider>
+              </JotaiProvider>
+            </ConvexClientProvider>
+          </ThemeProvider>
         </body>
       </html>
     </ConvexAuthNextjsServerProvider>

@@ -6,6 +6,8 @@ import Quill from "quill";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 import { Id } from "../../../../../../convex/_generated/dataModel";
+import { useDraftKey } from "@/hooks/use-drafts";
+import { writeDraft } from "@/lib/drafts";
 
 const Editor = dynamic(() => import("@/components/editor"), { ssr: false });
 
@@ -29,6 +31,7 @@ export const ChatInput = ({ placeholder, conversationId }: Props) => {
     const workspaceId = useWorkspaceId();
     const { mutate: generateUploadUrl } = useGenerateUploadUrl();
     const { mutate: createMessage } = useCreateMessage();
+    const draftKey = useDraftKey({ workspaceId, kind: "conversation", id: conversationId });
 
     const handleSubmit = async ({
         body,
@@ -73,6 +76,8 @@ export const ChatInput = ({ placeholder, conversationId }: Props) => {
             
             await createMessage( values, { throwError: true });
 
+            if (draftKey) writeDraft(draftKey, null);
+
             setEditorKey((prevKey) => prevKey + 1);
         } catch (error) {
             console.error(error);
@@ -84,13 +89,14 @@ export const ChatInput = ({ placeholder, conversationId }: Props) => {
     };
 
     return (
-        <div className="px-5 w-full">
+        <div className="mx-auto w-full max-w-3xl px-2.5 pb-3 md:px-5 md:pb-4">
             <Editor
                 key={editorKey}
                 placeholder={placeholder}
                 onSubmit={handleSubmit}
                 disabled={isPending}
                 innerRef={editorRef}
+                draftKey={draftKey}
             />
         </div>
     );

@@ -1,13 +1,16 @@
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
+import { Field } from "@/components/ui/field"
 import { FaGoogle, FaGithub } from "react-icons/fa"
 import { SignInFlow } from "../types"
-import Image from "next/image"
 import { useState } from "react"
 import { useAuthActions } from "@convex-dev/auth/react";
 import { OctagonAlertIcon } from "lucide-react"
 
+import { ZelraLoader } from "@/components/zelra-loader"
+import { PasswordInput } from "./password-input"
+
+const EMAIL = /^\S+@\S+\.\S+$/;
 
 interface Props {
     setState: (state: SignInFlow) => void;
@@ -20,114 +23,103 @@ export const SignInCard = ({ setState }: Props) => {
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
     const [pending, setPending] = useState(false);
+    // Which way the person is signing in, so only that button shows progress.
+    const [method, setMethod] = useState<"password" | "github" | "google" | null>(null);
+    const [emailTouched, setEmailTouched] = useState(false);
+
+    const emailError = emailTouched && email.length > 0 && !EMAIL.test(email) ? "Enter a full email address, like name@company.com." : null;
 
     const onPasswordSignIn = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
         setPending(true);
+        setMethod("password");
         signIn("password", { email, password, flow: "signIn" })
             .catch(() => {
                 setError("Invalid email or password");
             })
             .finally(() => {
                 setPending(false);
+                setMethod(null);
             });
     };
 
     const onProviderSignIn = (value: "github" | "google") => {
         setPending(true)
+        setMethod(value);
         signIn(value)
             .finally(() => {
                 setPending(false);
+                setMethod(null);
             })
     };
 
     return (
-        <div className="flex flex-col gap-6">
-            <Card className="overflow-hidden p-0 border-0 shadow-none">
-                <CardContent className="grid p-0 md:grid-cols-2">
-                    <form onSubmit={onPasswordSignIn} className="p-6 md:p-8">
-                        <div className="flex flex-col gap-6">
-                            <div className="flex flex-col items-center text-center">
-                                <h1 className="text-2xl font-bold">
-                                    Welcome back!
-                                </h1>
-                                <p className="text-muted-foreground text-balance">
-                                    Login to your account
-                                </p>
-                            </div>
-                            <div className="grid gap-3">
-                                <Input
-                                    disabled={pending}
-                                    value={email}
-                                    onChange={(e) => setEmail(e.target.value)}
-                                    placeholder="Email"
-                                    type="email"
-                                    required
-                                />
-                            </div>
-                            <div className="grid gap-3">
-                                <Input
-                                    disabled={pending}
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    placeholder="Password"
-                                    type="password"
-                                    required
-                                />
-                            </div>
-                            {!!error && (
-                                <div className="bg-destructive/15 p-3 rounded-md flex items-center gap-x-2 text-sm text-destructive">
-                                    <OctagonAlertIcon className="size-4" />
-                                    <p>{error}</p>
-                                </div>
-                            )}
-                            <Button type="submit" className="w-full" size="lg" disabled={pending}>
-                                Sign In
-                            </Button>
-                            <div className="after:border-border relative text-center text-sm after:absolute after:inset-0 after:top-1/2 after:z-0 after:flex after:items-center after:border-t">
-                                <span className="bg-card text-muted-foreground relative z-10 px-2">
-                                    Or continue with
-                                </span>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <Button
-                                    disabled={pending}
-                                    onClick={() => onProviderSignIn("google")}
-                                    variant="outline"
-                                    type="button"
-                                    className="w-full"
-                                >
-                                    <FaGoogle />
-                                </Button>
-                                <Button
-                                    disabled={pending}
-                                    onClick={() => onProviderSignIn("github")}
-                                    variant="outline"
-                                    type="button"
-                                    className="w-full"
-                                >
-                                    <FaGithub />
-                                </Button>
-                            </div>
-                            <p className="text-center text-sm text-muted-foreground">
-                                Don&apos;t have an account? <span onClick={() => setState("signUp")} className="text-sky-700 hover:underline cursor-pointer">Sign up</span>
-                            </p>
-                        </div>
-
-
-                    </form>
-                    <div className="bg-radial from-sky-700 to-blue-900 relative hidden md:flex flex-col gap-y-4 items-center justify-center">
-                        <Image src="/logo.svg" alt="Image" width={92} height={92} className="h-[92px] w-[92px]" />
-                        <p className="text-2xl font-semibold text-white">
-                            ZELRA
-                        </p>
-                    </div>
-                </CardContent>
-            </Card>
-            <div className="text-white *:[a]:hover:text-primary text-center text-xs text-balance *:[a]:underline *:[a]:underline-offset-4">
-                By clicking continue, you agree to our <a href="#">Terms of Service</a> and <a href="#"> Privacy Policy</a>
+        <form onSubmit={onPasswordSignIn} className="grid gap-5">
+            <div>
+                <h2 className="font-display text-[26px] font-semibold leading-tight tracking-[-0.02em]">Welcome back</h2>
+                <p className="mt-1.5 text-sm text-ink-2">Sign in to pick up where your team left off.</p>
             </div>
-        </div>
+            <Field id="signin-email" label="Email" error={emailError}>
+                <Input
+                    disabled={pending}
+                    value={email}
+                    onChange={(e) => { setEmail(e.target.value); setError(""); }}
+                    onBlur={() => setEmailTouched(true)}
+                    placeholder="you@company.com"
+                    type="email"
+                    autoComplete="email"
+                    autoFocus
+                    required
+                />
+            </Field>
+            <Field id="signin-password" label="Password">
+                <PasswordInput
+                    disabled={pending}
+                    value={password}
+                    onChange={(e) => { setPassword(e.target.value); setError(""); }}
+                    autoComplete="current-password"
+                    required
+                />
+            </Field>
+            {!!error && (
+                <div role="alert" className="flex items-center gap-x-2 rounded-lg bg-danger-wash p-3 text-sm text-danger motion-safe:animate-rise">
+                    <OctagonAlertIcon className="size-4 shrink-0" />
+                    <p>{error}</p>
+                </div>
+            )}
+            <Button type="submit" className="w-full" size="lg" disabled={pending}>
+                {method === "password" ? <ZelraLoader label="Signing in" /> : "Sign in"}
+            </Button>
+            <div className="flex items-center gap-3 text-xs text-ink-3 before:h-px before:flex-1 before:bg-line after:h-px after:flex-1 after:bg-line">
+                or
+            </div>
+            <div className="grid gap-2">
+                <Button
+                    disabled={pending}
+                    onClick={() => onProviderSignIn("google")}
+                    variant="outline"
+                    type="button"
+                    className="w-full"
+                >
+                    {method === "google" ? <ZelraLoader label="Opening Google" /> : <><FaGoogle />Continue with Google</>}
+                </Button>
+                <Button
+                    disabled={pending}
+                    onClick={() => onProviderSignIn("github")}
+                    variant="outline"
+                    type="button"
+                    className="w-full"
+                >
+                    {method === "github" ? <ZelraLoader label="Opening GitHub" /> : <><FaGithub />Continue with GitHub</>}
+                </Button>
+            </div>
+            <p className="text-center text-sm text-ink-3">
+                New to Zelra?{" "}
+                <button type="button" onClick={() => setState("signUp")} className="font-medium text-cobalt-ink hover:underline">
+                    Create an account
+                </button>
+            </p>
+        </form>
     )
 }

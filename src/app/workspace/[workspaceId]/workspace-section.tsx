@@ -1,9 +1,8 @@
 import { Hint } from "@/components/hint";
-import { Button } from "@/components/ui/button";
-import { PlusIcon } from "lucide-react";
-import { FaCaretDown } from "react-icons/fa";
+import { ChevronDownIcon, PlusIcon } from "lucide-react";
 import { useToggle } from "react-use";
 import { cn } from "@/lib/utils";
+import { useId } from "react";
 
 interface Props {
     children: React.ReactNode;
@@ -19,42 +18,35 @@ export const WorkspaceSection = ({
     onNew,
 }: Props) => {
     const [on, toggle] = useToggle(true);
+    const listId = useId();
 
     return (
-        <div className="flex flex-col mt-3 px-2">
-            <div className="flex items-center px-1 group">
-                <Button
-                    variant="transparent"
-                    className="p-0.5 text-sm text-[#f9edffcc] shrink-0 size-6"
+        <div className="mt-3 flex flex-col">
+            <div className="flex h-7 items-center pl-1.5 pr-1">
+                <button
                     onClick={toggle}
+                    aria-expanded={on}
+                    aria-controls={listId}
+                    className="flex flex-1 items-center gap-1 rounded-md px-1 py-0.5 text-xs font-semibold text-n-ink-3 transition-colors hover:text-n-ink"
                 >
-                    <FaCaretDown className={cn(
-                        "size-4 transition-transform",
-                        on && "-rotate-90"
-                    )}
-                    />
-                </Button>
-                <Button
-                    variant="transparent"
-                    size="sm"
-                    className=" group px-1.5 text-sm text-[#f9edffcc] h-[28px] justify-start overflow-hidden items-center"
-                >
-                    <span className="truncate">{label}</span>
-                </Button>
+                    <ChevronDownIcon className={cn("size-3.5 transition-transform duration-150", !on && "-rotate-90")} />
+                    {label}
+                </button>
                 {onNew && (
-                    <Hint label={hint} side="top" align="center">
-                        <Button
+                    <Hint label={hint} side="top">
+                        <button
                             onClick={onNew}
-                            variant="transparent"
-                            size="iconSm"
-                            className="opacity-0 group-hover:opacity-100 transition-opacity ml-auto p-0.5 text-sm text-[#f9edffcc] size-6 shrink-0"
+                            aria-label={hint}
+                            className="grid size-6 place-items-center rounded-md text-n-ink-3 transition-colors hover:bg-n-hover hover:text-n-ink"
                         >
-                            <PlusIcon className="size-5" />
-                        </Button>
+                            <PlusIcon className="size-4" />
+                        </button>
                     </Hint>
                 )}
             </div>
-            {on && children}
+            <div id={listId} hidden={!on} className="flex flex-col gap-px">
+                {children}
+            </div>
         </div>
     )
 }

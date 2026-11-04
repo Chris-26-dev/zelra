@@ -1,8 +1,7 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
 import { Id } from "../../../../convex/_generated/dataModel";
-import { AlertTriangle, Loader2, XIcon } from "lucide-react";
+import { MessageSquareDashedIcon } from "lucide-react";
 import { useGetMessage } from "../api/use-get-message";
 import { Message } from "@/components/message";
 import { useCurrentMember } from "@/features/members/api/use-current-member";
@@ -15,7 +14,16 @@ import { useCreateMessage } from "../api/use-create-message";
 import { useChannelId } from "@/hooks/use-channel-id";
 import { toast } from "sonner";
 import { useGetMessages } from "@/features/messages/api/use-get-messages";
+import { useQuery } from "convex/react";
+import { api } from "../../../../convex/_generated/api";
 import { differenceInMinutes, format, isToday, isYesterday } from "date-fns";
+import { PanelHeader } from "@/components/panel-header";
+import { EmptyState } from "@/components/empty-state";
+import { MessageSkeleton } from "@/components/ui/skeleton";
+import { ZelraLoader } from "@/components/zelra-loader";
+import { DayDivider } from "@/components/message-list";
+import { useDraftKey } from "@/hooks/use-drafts";
+import { writeDraft } from "@/lib/drafts";
 
 const Editor = dynamic(() => import("@/components/editor"), { ssr: false });
 
@@ -50,11 +58,15 @@ export const Thread = ({ messageId, onClose }: Props) => {
     const [editorKey, setEditorKey] = useState(0);
     const [isPending, setIsPending] = useState(false);
     const [isMounted, setIsMounted] = useState(false);
+    const [openedAt] = useState(() => Date.now());
 
     const editorRef = useRef<Quill | null>(null);
 
     const { data: currentMember } = useCurrentMember({ workspaceId });
     const { data: message, isLoading: loadingMessage } = useGetMessage({ id: messageId });
+    // Threads also open inside DMs, where there is no channel to name.
+    const channel = useQuery(api.channels.getById, channelId ? { id: channelId } : "skip");
+    const draftKey = useDraftKey({ workspaceId, kind: "thread", id: messageId });
 
     const { mutate: generateUploadUrl } = useGenerateUploadUrl();
     const { mutate: createMessage } = useCreateMessage();
@@ -66,6 +78,7 @@ export const Thread = ({ messageId, onClose }: Props) => {
 
     const canLoadMore = status === "CanLoadMore";
     const isLoadingMore = status === "LoadingMore";
+    const subtitle = channel ? `in #${channel.name}` : undefined;
 
     const handleSubmit = async ({
         body,
@@ -111,6 +124,8 @@ export const Thread = ({ messageId, onClose }: Props) => {
 
             await createMessage(values, { throwError: true });
 
+            if (draftKey) writeDraft(draftKey, null);
+
             setEditorKey((prevKey) => prevKey + 1);
         } catch (error) {
             console.log(error);
@@ -144,14 +159,9 @@ export const Thread = ({ messageId, onClose }: Props) => {
     if (loadingMessage || status === "LoadingFirstPage") {
         return (
             <div className="h-full flex flex-col">
-                <div className="flex justify-between items-center p-2 border-b">
-                    <p className="text-lg font-bold">Thread</p>
-                    <Button onClick={onClose} size="iconSm" variant="ghost">
-                        <XIcon className="size-5 stroke-[1.5]" />
-                    </Button>
-                </div>
-                <div className="flex h-full items-center justify-center">
-                    <Loader2 className="size-5 animate-spin text-muted-foreground" />
+                <PanelHeader title="Thread" subtitle={subtitle} onClose={onClose} />
+                <div className="flex flex-1 flex-col justify-start">
+                    <MessageSkeleton rows={3} />
                 </div>
             </div>
         );
@@ -160,73 +170,67 @@ export const Thread = ({ messageId, onClose }: Props) => {
     if (!message) {
         return (
             <div className="h-full flex flex-col">
-                <div className="flex justify-between items-center p-2 border-b">
-                    <p className="text-lg font-bold">Thread</p>
-                    <Button onClick={onClose} size="iconSm" variant="ghost">
-                        <XIcon className="size-5 stroke-[1.5]" />
-                    </Button>
-                </div>
-                <div className="flex flex-col gap-y-2 h-full items-center justify-center">
-                    <AlertTriangle className="size-5 text-muted-foreground" />
-                    <p className="text-sm text-muted-foreground">Message not found</p>
-                </div>
+                <PanelHeader title="Thread" subtitle={subtitle} onClose={onClose} />
+                <EmptyState
+                    icon={<MessageSquareDashedIcon />}
+                    title="Message not found"
+                    description="The message that started this thread may have been deleted."
+                />
             </div>
         );
     }
 
+    const replyCount = results?.length ?? 0;
+
     return (
         <div className="flex flex-col h-full overflow-hidden">
-            <div className="flex justify-between items-center p-2 border-b shrink-0">
-                <p className="text-lg font-bold">Thread</p>
-                <Button onClick={onClose} size="iconSm" variant="ghost">
-                    <XIcon className="size-5 stroke-[1.5]" />
-                </Button>
-            </div>
+            <PanelHeader title="Thread" subtitle={subtitle} onClose={onClose} />
             <div className="flex-1 flex flex-col-reverse pb-4 overflow-y-auto messages-scrollbar">
-                {Object.entries(groupedMessages || {}).map(([dateKey, messages]) => (
-                    <div key={dateKey}>
-                        <div className="text-center my-2 relative">
-                            <hr className="absolute top-1/2 left-0 right-0 border-t border-gray-300" />
-                            <span className="relative inline-block bg-white px-4 py-1 rounded-full text-xs border border-gray-300 shadow-sm">
-                                {formatDateLabel(dateKey)}
-                            </span>
-                        </div>
-                        {messages.map((message, index) => {
-                            const prevMessage = messages[index - 1];
-                            const isCompact =
-                                prevMessage &&
-                                prevMessage.user?._id === message.user?._id &&
-                                differenceInMinutes(
-                                    new Date(message._creationTime),
-                                    new Date(prevMessage._creationTime)
-                                ) < TIME_THRESHOLD;
+                <div className="relative">
+                    {replyCount > 0 && (
+                        <span aria-hidden="true" className="absolute bottom-4 left-[38px] top-12 w-0.5 bg-line" />
+                    )}
+                    {Object.entries(groupedMessages || {}).map(([dateKey, messages]) => (
+                        <div key={dateKey}>
+                            <DayDivider label={formatDateLabel(dateKey)} />
+                            {messages.map((message, index) => {
+                                const prevMessage = messages[index - 1];
+                                const isCompact =
+                                    prevMessage &&
+                                    prevMessage.user?._id === message.user?._id &&
+                                    differenceInMinutes(
+                                        new Date(message._creationTime),
+                                        new Date(prevMessage._creationTime)
+                                    ) < TIME_THRESHOLD;
 
-                            return (
-                                <Message
-                                    key={message._id}
-                                    id={message._id}
-                                    memberId={message.memberId}
-                                    authorImage={message.user.image}
-                                    authorName={message.user.name}
-                                    isAuthor={message.memberId === currentMember?._id}
-                                    reactions={message.reactions}
-                                    body={message.body}
-                                    image={message.image}
-                                    updatedAt={message.updatedAt}
-                                    createdAt={message._creationTime}
-                                    isEditing={editingId === message._id}
-                                    setEditingId={setEditingId}
-                                    isCompact={isCompact}
-                                    hideThreadButton
-                                    threadCount={message.threadCount}
-                                    threadImage={message.threadImage}
-                                    threadName={message.threadName}
-                                    threadTimestamp={message.threadTimestamp}
-                                />
-                            )
-                        })}
-                    </div>
-                ))}
+                                return (
+                                    <Message
+                                        key={message._id}
+                                        id={message._id}
+                                        memberId={message.memberId}
+                                        authorImage={message.user.image}
+                                        authorName={message.user.name}
+                                        isAuthor={message.memberId === currentMember?._id}
+                                        reactions={message.reactions}
+                                        body={message.body}
+                                        image={message.image}
+                                        updatedAt={message.updatedAt}
+                                        createdAt={message._creationTime}
+                                        isEditing={editingId === message._id}
+                                        setEditingId={setEditingId}
+                                        isCompact={isCompact}
+                                        isFresh={message._creationTime > openedAt}
+                                        hideThreadButton
+                                        threadCount={message.threadCount}
+                                        threadImage={message.threadImage}
+                                        threadName={message.threadName}
+                                        threadTimestamp={message.threadTimestamp}
+                                    />
+                                )
+                            })}
+                        </div>
+                    ))}
+                </div>
                 <div
                     className="h-1"
                     ref={(el) => {
@@ -246,37 +250,41 @@ export const Thread = ({ messageId, onClose }: Props) => {
                     }}
                 />
                 {isLoadingMore && (
-                    <div className="text-center my-2 relative">
-                        <hr className="absolute top-1/2 left-0 right-0 border-t border-gray-300" />
-                        <span className="relative inline-block bg-white px-4 py-1 rounded-full text-xs border border-gray-300 shadow-sm">
-                            <Loader2 className="size-5 animate-spin text-muted-foreground" />
-                        </span>
+                    <div className="flex justify-center py-3 text-ink-3">
+                        <ZelraLoader label="Loading earlier replies" />
                     </div>
                 )}
-                <Message
-                    hideThreadButton
-                    memberId={message.memberId}
-                    authorImage={message.user.image}
-                    authorName={message.user.name}
-                    isAuthor={message.memberId === currentMember?._id}
-                    body={message.body}
-                    image={message.image}
-                    createdAt={message._creationTime}
-                    updatedAt={message.updatedAt}
-                    id={message._id}
-                    reactions={message.reactions}
-                    isEditing={editingId === message._id}
-                    setEditingId={setEditingId}
-                />
+                <div className="flex items-center gap-3 px-5 pt-3 text-xs font-semibold text-ink-3">
+                    {replyCount === 0 ? "No replies yet. Start the thread below." : canLoadMore ? "Replies" : `${replyCount} ${replyCount === 1 ? "reply" : "replies"}`}
+                    <span aria-hidden="true" className="h-px flex-1 bg-line" />
+                </div>
+                <div className="border-b border-line bg-paper pb-2 pt-2">
+                    <Message
+                        hideThreadButton
+                        memberId={message.memberId}
+                        authorImage={message.user.image}
+                        authorName={message.user.name}
+                        isAuthor={message.memberId === currentMember?._id}
+                        body={message.body}
+                        image={message.image}
+                        createdAt={message._creationTime}
+                        updatedAt={message.updatedAt}
+                        id={message._id}
+                        reactions={message.reactions}
+                        isEditing={editingId === message._id}
+                        setEditingId={setEditingId}
+                    />
+                </div>
             </div>
             {isMounted && (
-                <div className="px-4">
+                <div className="px-2.5 pb-3 md:px-4">
                     <Editor
                         key={editorKey}
                         onSubmit={handleSubmit}
                         innerRef={editorRef}
                         disabled={isPending}
-                        placeholder="Reply.."
+                        placeholder="Reply…"
+                        draftKey={draftKey}
                     />
                 </div>
             )}
